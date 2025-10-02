@@ -143,9 +143,21 @@
             transform: scale(1.1);
             box-shadow: 0 0 20px 5px #fff, 0 8px 12px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.6);
         }
+
+        .splash-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div id="splash-screen" class="fixed inset-0 bg-gradient-to-br from-purple-600 to-pink-500 flex flex-col items-center justify-center z-50 transition-opacity duration-1000">
+        <h1 class="text-7xl md:text-8xl text-white tracking-wider font-display" style="text-shadow: 4px 4px 6px rgba(0,0,0,0.4);">Candy Gloss</h1>
+        <p class="text-2xl text-white mt-4 text-center px-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Release Your Stress without Any Ads</p>
+        <p class="text-xl text-white mt-12" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">by</p>
+        <p class="text-3xl text-white font-display mt-2" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Mirjan Ali Sha</p>
+    </div>
 
     <!-- The main container uses max-width to look good on desktop and w-full for mobile -->
     <div class="w-full max-w-lg mx-auto">
@@ -181,6 +193,10 @@
         <div id="game-board" class="aspect-square w-full max-w-md mx-auto"></div>
     </div>
 
+    <div class="text-center mt-4 text-white" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+        <p>Created by Mirjan Ali Sha</p>
+    </div>
+
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white/90 text-gray-800 rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full transform transition-all scale-95 opacity-0" id="modal-content">
             <h2 id="modal-title" class="text-4xl font-display mb-4">Level Complete!</h2>
@@ -193,6 +209,11 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const splashScreen = document.getElementById('splash-screen');
+            setTimeout(() => {
+                splashScreen.classList.add('splash-hidden');
+            }, 3500);
+
             const grid = document.getElementById('game-board');
             const scoreDisplay = document.getElementById('score');
             const levelDisplay = document.getElementById('level');
