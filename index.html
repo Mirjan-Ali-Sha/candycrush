@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Viewport meta tag is crucial for responsive design on mobile devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glossy Candy Crush</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Prevents scrolling and pull-to-refresh on touch devices for a better game experience */
+            touch-action: none; 
+        }
+
+        h1, h2, .font-display {
+            font-family: 'Fredoka One', cursive;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f06198, #9b59b6, #3498db);
+            background-size: 400% 400%;
+            animation: background-pan 15s ease infinite;
+        }
+
+        @keyframes background-pan {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 4px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .candy {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Clamp ensures font size is responsive and readable on all screens */
+            font-size: clamp(20px, 6vw, 32px); 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .candy::before {
+            content: '';
+            position: absolute;
+            top: 2%;
+            left: 10%;
+            width: 80%;
+            height: 40%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+            border-radius: 50% / 25%;
+            transform: rotate(15deg);
+            z-index: 2;
+        }
+
+        /* Striped candy overlays - Made more visible */
+        .striped-h::after, .striped-v::after {
+            content: '';
+            position: absolute;
+            z-index: 1;
+            border-radius: 50%;
+        }
+        .striped-h::after {
+            width: 100%;
+            height: 14px; /* Increased thickness */
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(255,255,255,0.7), /* Increased opacity */
+                rgba(255,255,255,0.7) 10px,
+                transparent 10px,
+                transparent 20px
+            );
+        }
+        .striped-v::after {
+            width: 14px; /* Increased thickness */
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255,255,255,0.7), /* Increased opacity */
+                rgba(255,255,255,0.7) 10px,
+                transparent 10px,
+                transparent 20px
+            );
+        }
+
+
+        /* Candy colors with radial gradients */
+        .candy.red { background: radial-gradient(circle at 30% 30%, #ff7675, #d63031); }
+        .candy.yellow { background: radial-gradient(circle at 30% 30%, #fdcb6e, #fab1a0); }
+        .candy.orange { background: radial-gradient(circle at 30% 30%, #f0932b, #e67e22); }
+        .candy.purple { background: radial-gradient(circle at 30% 30%, #a29bfe, #8e44ad); }
+        .candy.green { background: radial-gradient(circle at 30% 30%, #55efc4, #00b894); }
+        .candy.blue { background: radial-gradient(circle at 30% 30%, #74b9ff, #3498db); }
+        .candy.pink { background: radial-gradient(circle at 30% 30%, #ff79c6, #ff55a3); }
+        .candy.lime { background: radial-gradient(circle at 30% 30%, #a2e233, #72b000); }
+        
+        /* Color bomb new effect */
+        .color-bomb-effect {
+            animation: pulse-bomb 1.5s infinite;
+        }
+        
+        @keyframes pulse-bomb {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7), inset 0 2px 4px rgba(255,255,255,0.6); }
+            70% { box-shadow: 0 0 10px 15px rgba(255, 255, 255, 0), inset 0 2px 4px rgba(255,255,255,0.6); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0), inset 0 2px 4px rgba(255,255,255,0.6); }
+        }
+
+
+        .candy.matched {
+            animation: pop 0.5s ease-out forwards;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.7; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .selected {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px 5px #fff, 0 8px 12px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.6);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- The main container uses max-width to look good on desktop and w-full for mobile -->
+    <div class="w-full max-w-lg mx-auto">
+        <header class="text-center mb-4">
+            <h1 class="text-5xl md:text-6xl text-white tracking-wider" style="text-shadow: 3px 3px 5px rgba(0,0,0,0.3);">Candy Gloss</h1>
+        </header>
+
+        <div class="grid grid-cols-4 gap-2 items-center bg-white/30 backdrop-blur-sm p-3 rounded-xl shadow-lg mb-4 text-white">
+            <div class="text-center">
+                <span class="font-display text-lg">LEVEL</span>
+                <p id="level" class="text-2xl font-bold">1</p>
+            </div>
+            <div class="text-center">
+                <span class="font-display text-lg">SCORE</span>
+                <p id="score" class="text-2xl font-bold">0</p>
+            </div>
+            <div class="text-center">
+                <span class="font-display text-lg">TARGET</span>
+                <p id="target-score" class="text-2xl font-bold">1000</p>
+            </div>
+            <div class="text-center">
+                <label for="difficulty-select" class="font-display text-lg">DIFFICULTY</label>
+                <select id="difficulty-select" class="bg-white/20 text-white rounded-md p-1 font-bold text-center appearance-none w-full cursor-pointer">
+                    <option value="Easy" class="text-black">Easy</option>
+                    <option value="Medium" class="text-black">Medium</option>
+                    <option value="Hard" class="text-black">Hard</option>
+                    <option value="Expert" class="text-black">Expert</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- The game board uses aspect-square to maintain its shape on all screen sizes -->
+        <div id="game-board" class="aspect-square w-full max-w-md mx-auto"></div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white/90 text-gray-800 rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full transform transition-all scale-95 opacity-0" id="modal-content">
+            <h2 id="modal-title" class="text-4xl font-display mb-4">Level Complete!</h2>
+            <p id="modal-message" class="text-lg mb-6">Your score: <span id="modal-score" class="font-bold">0</span></p>
+            <button id="modal-button" class="font-display text-xl bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300">
+                Next Level
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('game-board');
+            const scoreDisplay = document.getElementById('score');
+            const levelDisplay = document.getElementById('level');
+            const targetScoreDisplay = document.getElementById('target-score');
+            const difficultySelect = document.getElementById('difficulty-select');
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalScore = document.getElementById('modal-score');
+            const modalButton = document.getElementById('modal-button');
+
+            const width = 8;
+            let squares = [];
+            let score = 0;
+            let level = 1;
+            let targetScore = 1000;
+            let isChecking = false;
+            
+            const allCandyTypes = [
+                { type: '😀', color: 'yellow' }, { type: '❤️', color: 'red' },
+                { type: '🥳', color: 'purple' }, { type: '😎', color: 'blue' },
+                { type: '🍀', color: 'green' }, { type: '🍊', color: 'orange' },
+                { type: '💎', color: 'pink' }, { type: '⭐️', color: 'lime' }
+            ];
+            let currentCandyTypes = [];
+
+            let candyIdBeingDragged;
+            let candyIdBeingReplaced;
+            let candyIdSelectedByClick = null;
+            
+            function updateDifficulty() {
+                const difficulty = difficultySelect.value;
+                currentCandyTypes = allCandyTypes.slice(0, 5 + ['Easy', 'Medium', 'Hard', 'Expert'].indexOf(difficulty));
+            }
+
+            function createBoard() {
+                for (let i = 0; i < width * width; i++) {
+                    const square = document.createElement('div');
+                    square.setAttribute('draggable', true);
+                    square.setAttribute('id', i);
+                    
+                    const randomCandy = currentCandyTypes[Math.floor(Math.random() * currentCandyTypes.length)];
+                    square.className = `candy ${randomCandy.color}`;
+                    square.innerHTML = randomCandy.type;
+                    square.dataset.type = randomCandy.type;
+                    square.dataset.special = 'none';
+
+                    grid.appendChild(square);
+                    squares.push(square);
+                }
+            }
+
+            function setupEventListeners() {
+                let touchStartX, touchStartY;
+                squares.forEach(square => {
+                    square.addEventListener('dragstart', dragStart);
+                    square.addEventListener('dragend', dragEnd);
+                    square.addEventListener('dragover', (e) => e.preventDefault());
+                    square.addEventListener('dragenter', (e) => e.preventDefault());
+                    square.addEventListener('drop', dragDrop);
+                    square.addEventListener('click', candyClick);
+
+                    square.addEventListener('touchstart', (e) => {
+                        if (isChecking) return;
+                        candyIdBeingDragged = parseInt(square.id);
+                        touchStartX = e.changedTouches[0].pageX;
+                        touchStartY = e.changedTouches[0].pageY;
+                    }, { passive: true });
+
+                    square.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+                    square.addEventListener('touchend', (e) => {
+                        if (isChecking) return;
+                        const touchEndX = e.changedTouches[0].pageX;
+                        const touchEndY = e.changedTouches[0].pageY;
+                        const deltaX = touchEndX - touchStartX;
+                        const deltaY = touchEndY - touchStartY;
+                        const swipeThreshold = 20;
+
+                        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                            if (deltaX > swipeThreshold) candyIdBeingReplaced = candyIdBeingDragged + 1;
+                            else if (deltaX < -swipeThreshold) candyIdBeingReplaced = candyIdBeingDragged - 1;
+                        } else {
+                            if (deltaY > swipeThreshold) candyIdBeingReplaced = candyIdBeingDragged + width;
+                            else if (deltaY < -swipeThreshold) candyIdBeingReplaced = candyIdBeingDragged - width;
+                        }
+                        dragEnd();
+                    });
+                });
+                difficultySelect.addEventListener('change', handleDifficultyChange);
+            }
+
+            function handleDifficultyChange() {
+                level = 1; score = 0; targetScore = 1000;
+                startGame();
+            }
+            
+            async function candyClick() {
+                if (isChecking) return;
+                const clickedId = parseInt(this.id);
+
+                if (candyIdSelectedByClick === clickedId) {
+                    this.classList.remove('selected');
+                    candyIdSelectedByClick = null;
+                    return;
+                }
+                if (candyIdSelectedByClick === null) {
+                    candyIdSelectedByClick = clickedId;
+                    this.classList.add('selected');
+                } else { 
+                    squares[candyIdSelectedByClick].classList.remove('selected');
+                    if (isValidSwap(candyIdSelectedByClick, clickedId)) {
+                        candyIdBeingDragged = candyIdSelectedByClick;
+                        candyIdBeingReplaced = clickedId;
+                        await dragEnd();
+                    }
+                    candyIdSelectedByClick = null;
+                }
+            }
+            
+            function startGame() {
+                grid.innerHTML = ''; squares = [];
+                updateDifficulty(); createBoard(); setupEventListeners();
+                
+                while (findAndProcessMatches(true).matchedIndices.size > 0) {
+                    grid.innerHTML = ''; squares = [];
+                    createBoard(); setupEventListeners();
+                }
+                updateDisplays();
+            }
+
+            function updateDisplays() {
+                scoreDisplay.textContent = score;
+                levelDisplay.textContent = level;
+                targetScoreDisplay.textContent = targetScore;
+            }
+
+            function dragStart() { 
+                if (isChecking) return;
+                if (candyIdSelectedByClick !== null) squares[candyIdSelectedByClick].classList.remove('selected');
+                candyIdSelectedByClick = null;
+                candyIdBeingDragged = parseInt(this.id); 
+            }
+
+            function dragDrop() { if(isChecking) return; candyIdBeingReplaced = parseInt(this.id); }
+
+            async function dragEnd() {
+                if (isChecking || candyIdBeingDragged === undefined || candyIdBeingReplaced === undefined) return;
+                
+                if (isValidSwap(candyIdBeingDragged, candyIdBeingReplaced)) {
+                    isChecking = true;
+                    await performSwap(candyIdBeingDragged, candyIdBeingReplaced);
+                    isChecking = false;
+                }
+                
+                candyIdBeingDragged = undefined;
+                candyIdBeingReplaced = undefined;
+            }
+
+            function isValidSwap(id1, id2) {
+                if (id1 === undefined || id2 === undefined || id2 < 0 || id2 >= width * width) return false;
+                const isLeftEdge = (id1 % width === 0);
+                const isRightEdge = (id1 % width === width - 1);
+                if (isLeftEdge && id2 === id1 - 1) return false;
+                if (isRightEdge && id2 === id1 + 1) return false;
+                const validMoves = [id1 - 1, id1 + 1, id1 - width, id1 + width];
+                return validMoves.includes(id2);
+            }
+            
+            async function performSwap(id1, id2) {
+                swapCandies(id1, id2);
+                let boardChanged = await gameLoop(true, id1, id2); // Pass a flag indicating this is a user-initiated swap
+
+                if (!boardChanged) { // If no matches or activations resulted, swap back
+                    await new Promise(r => setTimeout(r, 300));
+                    swapCandies(id1, id2);
+                }
+            }
+            
+            function swapCandies(id1, id2) {
+                const s1 = squares[id1], s2 = squares[id2];
+                const class1 = s1.className, inner1 = s1.innerHTML, type1 = s1.dataset.type, special1 = s1.dataset.special;
+                s1.className = s2.className; s1.innerHTML = s2.innerHTML; s1.dataset.type = s2.dataset.type; s1.dataset.special = s2.dataset.special;
+                s2.className = class1; s2.innerHTML = inner1; s2.dataset.type = type1; s2.dataset.special = special1;
+            }
+
+            async function gameLoop(isUserSwap = false, id1, id2) {
+                let boardWasChanged = false;
+                let boardCanChange = true;
+
+                while (boardCanChange) {
+                    const { matchedIndices, specialCreations } = findAndProcessMatches();
+                    const toCrush = new Set(matchedIndices);
+                    
+                    if (isUserSwap) { 
+                        activateSpecialOnSwap(id1, id2, toCrush);
+                        isUserSwap = false; 
+                    }
+
+                    // New logic to activate color bombs in regular matches
+                    let colorBombInMatch = false;
+                    matchedIndices.forEach(index => {
+                        const s = squares[index];
+                        if (s?.dataset.special === 'color-bomb') {
+                            colorBombInMatch = true;
+                            blastColor(s.dataset.type, toCrush);
+                        }
+                    });
+
+                    // Check for special candies inside cascade matches that weren't part of a color bomb match
+                    if (!colorBombInMatch) {
+                        matchedIndices.forEach(index => {
+                             if (squares[index]?.dataset.special !== 'none' && squares[index]?.dataset.special !== 'color-bomb') {
+                                 activateSpecialOnCascade(index, toCrush);
+                             }
+                        });
+                    }
+
+                    if (toCrush.size > 0) {
+                        boardWasChanged = true;
+                        score += toCrush.size * 10;
+                        updateDisplays();
+
+                        specialCreations.forEach(creation => toCrush.delete(creation.index));
+                        
+                        await crushCandies(toCrush);
+                        await createSpecialCandies(specialCreations);
+                        await moveDownCandies();
+                        await fillEmptyCandies();
+                    } else {
+                        boardCanChange = false;
+                    }
+                }
+                if(boardWasChanged) checkLevelComplete();
+                return boardWasChanged;
+            }
+
+            function findAndProcessMatches(isCheckOnly = false) {
+                const matchedIndices = new Set();
+                let specialCreations = []; 
+                const allMatches = findAllMatches();
+
+                const fiveMatches = allMatches.filter(m => m.length === 5);
+                fiveMatches.forEach(match => {
+                    match.forEach(id => matchedIndices.add(id));
+                    if(!isCheckOnly) specialCreations.push({ index: match[0], specialType: 'color-bomb' });
+                });
+
+                const fourMatches = allMatches.filter(m => m.length === 4);
+                fourMatches.forEach(match => {
+                    if ([...match].some(id => matchedIndices.has(id))) return;
+                    match.forEach(id => matchedIndices.add(id));
+                    if(!isCheckOnly) {
+                        const orientation = (match[1] - match[0] === 1) ? '-h' : '-v';
+                        specialCreations.push({ index: match[0], specialType: 'striped' + orientation });
+                    }
+                });
+
+                const threeMatches = allMatches.filter(m => m.length === 3);
+                const centers = findTandLMatches(threeMatches, matchedIndices);
+                centers.forEach(centerInfo => {
+                    if(isCheckOnly) return;
+                    centerInfo.hMatch.forEach(id => matchedIndices.add(id));
+                    centerInfo.vMatch.forEach(id => matchedIndices.add(id));
+                    specialCreations.push({ index: centerInfo.center, specialType: 'wrapped' });
+                });
+                
+                threeMatches.forEach(match => {
+                     if ([...match].some(id => matchedIndices.has(id))) return;
+                     match.forEach(id => matchedIndices.add(id));
+                });
+
+                return { matchedIndices, specialCreations };
+            }
+
+            function findAllMatches() {
+                const matches = [];
+                for(let i=0; i<width*width; i++) {
+                    const type = squares[i].dataset.type;
+                    if(!type) continue;
+                    let hMatch = [i];
+                    for(let j=1; i%width+j < width && squares[i+j]?.dataset.type === type; j++) hMatch.push(i+j);
+                    if(hMatch.length >= 3) matches.push(hMatch);
+                    
+                    let vMatch = [i];
+                    for(let j=1; i+j*width < width*width && squares[i+j*width]?.dataset.type === type; j++) vMatch.push(i+j*width);
+                    if(vMatch.length >= 3) matches.push(vMatch);
+                }
+                return matches;
+            }
+
+            function findTandLMatches(threeMatches, matchedIndices) {
+                 const centers = [];
+                 for(let i=0; i<width*width; i++) {
+                     if(!squares[i].dataset.type || matchedIndices.has(i)) continue;
+                     const hMatch = threeMatches.find(m => m.includes(i) && m[1]-m[0] === 1);
+                     const vMatch = threeMatches.find(m => m.includes(i) && m[1]-m[0] === width);
+                     if(hMatch && vMatch && ![...hMatch, ...vMatch].some(id => matchedIndices.has(id))) {
+                         centers.push({ center: i, hMatch, vMatch });
+                     }
+                 }
+                 return centers;
+            }
+            
+            async function createSpecialCandies(creations) {
+                for (const creation of creations) {
+                    const s = squares[creation.index];
+                    if (s) {
+                        s.dataset.special = creation.specialType;
+                        if (creation.specialType === 'wrapped') s.innerHTML = '🎁';
+                        else if (creation.specialType === 'color-bomb') {
+                            s.innerHTML = '✨';
+                            s.classList.add('color-bomb-effect');
+                        }
+                        else if (creation.specialType.startsWith('striped')) {
+                            s.classList.add(creation.specialType);
+                        }
+                    }
+                }
+            }
+            
+            function activateSpecialOnSwap(id1, id2, toCrush) {
+                const s1 = squares[id1], s2 = squares[id2];
+                const special1 = s1.dataset.special, special2 = s2.dataset.special;
+                if(special1 === 'none' && special2 === 'none') return;
+
+                toCrush.add(id1); toCrush.add(id2);
+                if (special1.startsWith('striped')) blastLine(id1, special1, toCrush);
+                if (special1 === 'wrapped') blastSquare(id1, toCrush);
+                if (special1 === 'color-bomb') {
+                    let targetType = s2.dataset.type;
+                    if (special2 !== 'none' || !targetType) targetType = findMostCommonColor();
+                    blastColor(targetType, toCrush);
+                }
+                
+                if (special2.startsWith('striped')) blastLine(id2, special2, toCrush);
+                if (special2 === 'wrapped') blastSquare(id2, toCrush);
+                if (special2 === 'color-bomb') {
+                    let targetType = s1.dataset.type;
+                    if (special1 !== 'none' || !targetType) targetType = findMostCommonColor();
+                    blastColor(targetType, toCrush);
+                }
+            }
+
+            function activateSpecialOnCascade(index, toCrush) {
+                const specialType = squares[index].dataset.special;
+                if (specialType.startsWith('striped')) blastLine(index, specialType, toCrush);
+                if (specialType === 'wrapped') blastSquare(index, toCrush);
+            }
+
+            function findMostCommonColor() {
+                const counts = {};
+                squares.forEach(s => { if(s.dataset.type) counts[s.dataset.type] = (counts[s.dataset.type] || 0) + 1; });
+                return Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, null);
+            }
+
+
+            function blastLine(index, type, toCrush) {
+                const row = Math.floor(index/width), col = index % width;
+                if(type.includes('-h')) {
+                    for(let i=0; i<width; i++) toCrush.add(row*width + i);
+                } else {
+                    for(let i=0; i<width; i++) toCrush.add(i*width + col);
+                }
+            }
+            function blastSquare(index, toCrush) {
+                for(let r = -1; r <= 1; r++){
+                    for(let c = -1; c <= 1; c++){
+                        const newIndex = index + r*width + c;
+                        if(newIndex >=0 && newIndex < width*width) toCrush.add(newIndex);
+                    }
+                }
+            }
+            function blastColor(type, toCrush) {
+                if (!type) return;
+                squares.forEach((s, i) => { if(s.dataset.type === type) toCrush.add(i); });
+            }
+
+            async function crushCandies(indices) {
+                indices.forEach(i => { if(squares[i]) squares[i].classList.add('matched'); });
+                await new Promise(r => setTimeout(r, 500));
+                indices.forEach(i => {
+                    const s = squares[i];
+                    if(s) {
+                        s.innerHTML = ''; 
+                        s.dataset.type = ''; 
+                        s.dataset.special = 'none';
+                        s.className = 'candy';
+                    }
+                });
+            }
+            
+            async function moveDownCandies() {
+                 for (let i = width*width - 1; i >= 0; i--) {
+                    if (squares[i].dataset.type === '') {
+                        let k = i - width;
+                        while(k >= 0 && squares[k].dataset.type === '') k -= width;
+                        if (k >= 0) swapCandies(i, k);
+                    }
+                }
+                await new Promise(r => setTimeout(r, 100));
+            }
+            
+            async function fillEmptyCandies() {
+                for (let i = 0; i < width * width; i++) {
+                    if (squares[i].dataset.type === '') {
+                         const randomCandy = currentCandyTypes[Math.floor(Math.random() * currentCandyTypes.length)];
+                         squares[i].className = `candy ${randomCandy.color}`;
+                         squares[i].innerHTML = randomCandy.type;
+                         squares[i].dataset.type = randomCandy.type;
+                         squares[i].dataset.special = 'none';
+                    }
+                }
+            }
+
+            function checkLevelComplete() {
+                if (score >= targetScore) {
+                    level++; score = 0; targetScore = Math.floor(targetScore * 1.5);
+                    let newDifficulty = 'Easy';
+                    if (level >= 10) newDifficulty = 'Expert';
+                    else if (level >= 7) newDifficulty = 'Hard';
+                    else if (level >= 4) newDifficulty = 'Medium';
+                    difficultySelect.value = newDifficulty;
+                    showModal(`Level ${level-1} Complete!`, `Difficulty is now ${newDifficulty}. Get ready!`, "Start Level " + level);
+                }
+            }
+
+            function showModal(title, message, buttonText) {
+                modalTitle.textContent = title; modalMessage.innerHTML = message; modalScore.textContent = score; modalButton.textContent = buttonText;
+                modal.classList.remove('hidden');
+                setTimeout(() => { modalContent.classList.remove('scale-95', 'opacity-0'); }, 50);
+            }
+
+            modalButton.addEventListener('click', () => {
+                modalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => { modal.classList.add('hidden'); if (modalButton.textContent.toLowerCase().includes('level')) setTimeout(startGame, 300); }, 300);
+            });
+
+            startGame();
+        });
+    </script>
+</body>
+</html>
+
