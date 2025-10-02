@@ -414,24 +414,21 @@
                         isUserSwap = false; 
                     }
 
-                    // New logic to activate color bombs in regular matches
-                    let colorBombInMatch = false;
+                    // NEW UNIFIED LOGIC: Check for ANY special candies within new matches and activate them.
+                    // This handles the case where a special candy is part of a cascade match.
                     matchedIndices.forEach(index => {
-                        const s = squares[index];
-                        if (s?.dataset.special === 'color-bomb') {
-                            colorBombInMatch = true;
-                            blastColor(s.dataset.type, toCrush);
+                        const specialType = squares[index]?.dataset.special;
+                        if (specialType && specialType !== 'none') {
+                            // Activate the special candy. This will add more candies to the 'toCrush' set.
+                            if (specialType === 'color-bomb') {
+                                blastColor(squares[index].dataset.type, toCrush);
+                            } else {
+                                // This handles striped and wrapped candies
+                                activateSpecialOnCascade(index, toCrush);
+                            }
                         }
                     });
 
-                    // Check for special candies inside cascade matches that weren't part of a color bomb match
-                    if (!colorBombInMatch) {
-                        matchedIndices.forEach(index => {
-                             if (squares[index]?.dataset.special !== 'none' && squares[index]?.dataset.special !== 'color-bomb') {
-                                 activateSpecialOnCascade(index, toCrush);
-                             }
-                        });
-                    }
 
                     if (toCrush.size > 0) {
                         boardWasChanged = true;
