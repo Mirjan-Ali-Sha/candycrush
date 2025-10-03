@@ -21,16 +21,13 @@
         }
         
         body {
+            /* OPTIMIZATION: Replaced the constantly animating gradient with a static one to reduce GPU load. */
             background: linear-gradient(135deg, #f06198, #9b59b6, #3498db);
             background-size: 400% 400%;
-            animation: background-pan 15s ease infinite;
         }
 
-        @keyframes background-pan {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+        /* OPTIMIZATION: Removed the resource-intensive background-pan animation. */
+        /* @keyframes background-pan ... */
 
         #game-board {
             display: grid;
@@ -116,16 +113,22 @@
         .candy.blue { background: radial-gradient(circle at 30% 30%, #74b9ff, #3498db); }
         .candy.pink { background: radial-gradient(circle at 30% 30%, #ff79c6, #ff55a3); }
         .candy.lime { background: radial-gradient(circle at 30% 30%, #a2e233, #72b000); }
+        /* New attractive colors */
+        .candy.cyan { background: radial-gradient(circle at 30% 30%, #4dd0e1, #0097a7); }
+        .candy.rose { background: radial-gradient(circle at 30% 30%, #f48fb1, #f06292); }
+        .candy.indigo { background: radial-gradient(circle at 30% 30%, #7986cb, #3f51b5); }
+        .candy.maroon { background: radial-gradient(circle at 30% 30%, #e57373, #c62828); }
         
         /* Color bomb new effect */
         .color-bomb-effect {
             animation: pulse-bomb 1.5s infinite;
         }
         
+        /* OPTIMIZATION: Replaced expensive box-shadow animation with a lightweight transform animation. */
         @keyframes pulse-bomb {
-            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7), inset 0 2px 4px rgba(255,255,255,0.6); }
-            70% { box-shadow: 0 0 10px 15px rgba(255, 255, 255, 0), inset 0 2px 4px rgba(255,255,255,0.6); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0), inset 0 2px 4px rgba(255,255,255,0.6); }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
         }
 
 
@@ -233,11 +236,14 @@
             let targetScore = 1000;
             let isChecking = false;
             
+            // New attractive emoji and color list
             const allCandyTypes = [
                 { type: '😀', color: 'yellow' }, { type: '❤️', color: 'red' },
                 { type: '🥳', color: 'purple' }, { type: '😎', color: 'blue' },
-                { type: '🍀', color: 'green' }, { type: '🍊', color: 'orange' },
-                { type: '💎', color: 'pink' }, { type: '⭐️', color: 'lime' }
+                { type: '🍀', color: 'green' },  { type: '🍊', color: 'orange' },
+                { type: '💎', color: 'cyan' },   { type: '⭐️', color: 'lime' },
+                { type: '🐙', color: 'pink' },   { type: '🦋', color: 'indigo' },
+                { type: '🍁', color: 'maroon' }, { type: '🌸', color: 'rose' }
             ];
             let currentCandyTypes = [];
 
@@ -247,7 +253,11 @@
             
             function updateDifficulty() {
                 const difficulty = difficultySelect.value;
-                currentCandyTypes = allCandyTypes.slice(0, 5 + ['Easy', 'Medium', 'Hard', 'Expert'].indexOf(difficulty));
+                const difficultyMap = { 'Easy': 5, 'Medium': 7, 'Hard': 9, 'Expert': 12 };
+                // Shuffle the master list of candies to get a random mix for each game.
+                const shuffledCandies = [...allCandyTypes].sort(() => 0.5 - Math.random());
+                // Take a slice from the shuffled list based on the chosen difficulty.
+                currentCandyTypes = shuffledCandies.slice(0, difficultyMap[difficulty]);
             }
 
             function createBoard() {
@@ -414,18 +424,11 @@
                         isUserSwap = false; 
                     }
 
-                    // NEW UNIFIED LOGIC: Check for ANY special candies within new matches and activate them.
-                    // This handles the case where a special candy is part of a cascade match.
+                    // Wrapped bombs and striped candies can detonate automatically in a cascade.
                     matchedIndices.forEach(index => {
                         const specialType = squares[index]?.dataset.special;
-                        if (specialType && specialType !== 'none') {
-                            // Activate the special candy. This will add more candies to the 'toCrush' set.
-                            if (specialType === 'color-bomb') {
-                                blastColor(squares[index].dataset.type, toCrush);
-                            } else {
-                                // This handles striped and wrapped candies
-                                activateSpecialOnCascade(index, toCrush);
-                            }
+                        if (specialType === 'wrapped' || specialType.startsWith('striped')) {
+                            activateSpecialOnCascade(index, toCrush);
                         }
                     });
 
@@ -450,20 +453,20 @@
             }
 
             function findAndProcessMatches(isCheckOnly = false) {
-                const matchedIndices = new Set();
+                const tempMatchedIndices = new Set();
                 let specialCreations = []; 
                 const allMatches = findAllMatches();
 
                 const fiveMatches = allMatches.filter(m => m.length === 5);
                 fiveMatches.forEach(match => {
-                    match.forEach(id => matchedIndices.add(id));
+                    match.forEach(id => tempMatchedIndices.add(id));
                     if(!isCheckOnly) specialCreations.push({ index: match[0], specialType: 'color-bomb' });
                 });
 
                 const fourMatches = allMatches.filter(m => m.length === 4);
                 fourMatches.forEach(match => {
-                    if ([...match].some(id => matchedIndices.has(id))) return;
-                    match.forEach(id => matchedIndices.add(id));
+                    if ([...match].some(id => tempMatchedIndices.has(id))) return;
+                    match.forEach(id => tempMatchedIndices.add(id));
                     if(!isCheckOnly) {
                         const orientation = (match[1] - match[0] === 1) ? '-h' : '-v';
                         specialCreations.push({ index: match[0], specialType: 'striped' + orientation });
@@ -471,18 +474,21 @@
                 });
 
                 const threeMatches = allMatches.filter(m => m.length === 3);
-                const centers = findTandLMatches(threeMatches, matchedIndices);
+                const centers = findTandLMatches(threeMatches, tempMatchedIndices);
                 centers.forEach(centerInfo => {
                     if(isCheckOnly) return;
-                    centerInfo.hMatch.forEach(id => matchedIndices.add(id));
-                    centerInfo.vMatch.forEach(id => matchedIndices.add(id));
+                    centerInfo.hMatch.forEach(id => tempMatchedIndices.add(id));
+                    centerInfo.vMatch.forEach(id => tempMatchedIndices.add(id));
                     specialCreations.push({ index: centerInfo.center, specialType: 'wrapped' });
                 });
                 
                 threeMatches.forEach(match => {
-                     if ([...match].some(id => matchedIndices.has(id))) return;
-                     match.forEach(id => matchedIndices.add(id));
+                     if ([...match].some(id => tempMatchedIndices.has(id))) return;
+                     match.forEach(id => tempMatchedIndices.add(id));
                 });
+
+                // A match can include special candies, which will be activated in the game loop.
+                const matchedIndices = tempMatchedIndices;
 
                 return { matchedIndices, specialCreations };
             }
@@ -536,30 +542,53 @@
             function activateSpecialOnSwap(id1, id2, toCrush) {
                 const s1 = squares[id1], s2 = squares[id2];
                 const special1 = s1.dataset.special, special2 = s2.dataset.special;
-                if(special1 === 'none' && special2 === 'none') return;
+                
+                // If swapping two special candies, activate both.
+                if (special1 !== 'none' && special2 !== 'none') {
+                    toCrush.add(id1); toCrush.add(id2);
 
-                toCrush.add(id1); toCrush.add(id2);
-                if (special1.startsWith('striped')) blastLine(id1, special1, toCrush);
-                if (special1 === 'wrapped') blastSquare(id1, toCrush);
-                if (special1 === 'color-bomb') {
-                    let targetType = s2.dataset.type;
-                    if (special2 !== 'none' || !targetType) targetType = findMostCommonColor();
-                    blastColor(targetType, toCrush);
+                    if (special1.startsWith('striped')) blastLine(id1, special1, toCrush);
+                    if (special1 === 'wrapped') blastSquare(id1, toCrush);
+                    if (special1 === 'color-bomb') {
+                        let targetType = s2.dataset.type;
+                        if (special2 !== 'none' || !targetType) targetType = findMostCommonColor();
+                        blastColor(targetType, toCrush);
+                    }
+                    
+                    if (special2.startsWith('striped')) blastLine(id2, special2, toCrush);
+                    if (special2 === 'wrapped') blastSquare(id2, toCrush);
+                    if (special2 === 'color-bomb') {
+                        let targetType = s1.dataset.type;
+                        if (special1 !== 'none' || !targetType) targetType = findMostCommonColor();
+                        blastColor(targetType, toCrush);
+                    }
+                    return; // Handled
+                }
+
+                // If swapping a wrapped or color bomb with a normal candy, activate it.
+                if (special1 === 'wrapped' || special1 === 'color-bomb') {
+                    toCrush.add(id1); toCrush.add(id2);
+                    if (special1 === 'wrapped') blastSquare(id1, toCrush);
+                    if (special1 === 'color-bomb') blastColor(s2.dataset.type, toCrush);
+                    return;
+                }
+                if (special2 === 'wrapped' || special2 === 'color-bomb') {
+                    toCrush.add(id1); toCrush.add(id2);
+                    if (special2 === 'wrapped') blastSquare(id2, toCrush);
+                    if (special2 === 'color-bomb') blastColor(s1.dataset.type, toCrush);
+                    return;
                 }
                 
-                if (special2.startsWith('striped')) blastLine(id2, special2, toCrush);
-                if (special2 === 'wrapped') blastSquare(id2, toCrush);
-                if (special2 === 'color-bomb') {
-                    let targetType = s1.dataset.type;
-                    if (special1 !== 'none' || !targetType) targetType = findMostCommonColor();
-                    blastColor(targetType, toCrush);
-                }
+                // A striped candy swapped with a normal candy is NOT activated here.
+                // It will only activate if the swap results in a match of 3,
+                // which is handled by the main game loop.
             }
 
             function activateSpecialOnCascade(index, toCrush) {
+                // This function handles special candy activations during a cascade.
                 const specialType = squares[index].dataset.special;
-                if (specialType.startsWith('striped')) blastLine(index, specialType, toCrush);
                 if (specialType === 'wrapped') blastSquare(index, toCrush);
+                if (specialType.startsWith('striped')) blastLine(index, specialType, toCrush);
             }
 
             function findMostCommonColor() {
@@ -655,4 +684,3 @@
     </script>
 </body>
 </html>
-
