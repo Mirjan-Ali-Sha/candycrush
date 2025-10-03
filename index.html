@@ -164,7 +164,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body class="min-h-screen flex flex-col items-center justify-start md:justify-center p-2">
 
     <div id="splash-screen" class="fixed inset-0 bg-gradient-to-br from-purple-600 to-pink-500 flex flex-col items-center justify-center z-50 transition-opacity duration-1000">
         <h1 class="text-7xl md:text-8xl text-white tracking-wider font-display" style="text-shadow: 4px 4px 6px rgba(0,0,0,0.4);">Candy Gloss</h1>
@@ -213,7 +213,7 @@
 
     <div class="flex space-x-4 mt-4">
         <button id="save-button" class="action-button">Save</button>
-        <button id="install-button" class="action-button">Add App</button>
+        <button id="install-button" class="action-button hidden">Add App</button>
     </div>
 
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
@@ -254,6 +254,7 @@
             let targetScore = 1000;
             let isChecking = false;
             let deferredInstallPrompt = null;
+            let savedBoardState = null;
             
             // Expanded list with more attractive emojis and distinct colors
             const allCandyTypes = [
@@ -272,6 +273,10 @@
             let candyIdBeingReplaced;
             let candyIdSelectedByClick = null;
             
+            function getCandyDetails(type) {
+                return allCandyTypes.find(c => c.type === type);
+            }
+
             function updateDifficulty() {
                 const difficulty = difficultySelect.value;
                 const difficultyMap = { 'Easy': 6, 'Medium': 8, 'Hard': 11, 'Expert': 14 };
@@ -279,7 +284,7 @@
                 currentCandyTypes = shuffledCandies.slice(0, difficultyMap[difficulty]);
             }
 
-            function createBoard() {
+            function createNewBoard() {
                 for (let i = 0; i < width * width; i++) {
                     const square = document.createElement('div');
                     square.setAttribute('draggable', true);
@@ -295,6 +300,40 @@
                     squares.push(square);
                 }
             }
+            
+            function reconstructBoard(boardState) {
+                for (let i = 0; i < width * width; i++) {
+                    const square = document.createElement('div');
+                    square.setAttribute('draggable', true);
+                    square.setAttribute('id', i);
+                    
+                    const savedCandy = boardState[i];
+                    if (savedCandy && savedCandy.type) {
+                        const details = getCandyDetails(savedCandy.type);
+                        square.className = `candy ${details.color}`;
+                        square.innerHTML = details.type;
+                        square.dataset.type = details.type;
+                        square.dataset.special = savedCandy.special || 'none';
+                        
+                        if (savedCandy.special === 'wrapped') square.innerHTML = '🎁';
+                        if (savedCandy.special === 'color-bomb') {
+                            square.innerHTML = '✨';
+                            square.classList.add('color-bomb-effect');
+                        }
+                        if (savedCandy.special.startsWith('striped')) {
+                            square.classList.add(savedCandy.special);
+                        }
+
+                    } else {
+                        square.className = 'candy';
+                        square.dataset.type = '';
+                        square.dataset.special = 'none';
+                    }
+                    grid.appendChild(square);
+                    squares.push(square);
+                }
+            }
+
 
             function setupEventListeners() {
                 let touchStartX, touchStartY;
@@ -344,6 +383,7 @@
 
             function handleDifficultyChange() {
                 level = 1; score = 0; targetScore = 1000;
+                savedBoardState = null; // Clear saved board on difficulty change
                 startGame();
             }
             
@@ -371,13 +411,22 @@
             }
             
             function startGame() {
-                grid.innerHTML = ''; squares = [];
-                updateDifficulty(); createBoard(); setupEventListeners();
-                
-                while (findAndProcessMatches(true).matchedIndices.size > 0) {
-                    grid.innerHTML = ''; squares = [];
-                    createBoard(); setupEventListeners();
+                grid.innerHTML = ''; 
+                squares = [];
+                updateDifficulty();
+
+                if (savedBoardState) {
+                    reconstructBoard(savedBoardState);
+                    savedBoardState = null;
+                } else {
+                    createNewBoard();
+                    while (findAndProcessMatches(true).matchedIndices.size > 0) {
+                        grid.innerHTML = ''; squares = [];
+                        createNewBoard();
+                    }
                 }
+                
+                setupEventListeners();
                 updateDisplays();
             }
 
@@ -675,7 +724,7 @@
                     else if (level >= 4) newDifficulty = 'Medium';
                     difficultySelect.value = newDifficulty;
                     showModal(`Level ${level-1} Complete!`, `Difficulty is now ${newDifficulty}. Get ready!`, "Start Level " + level);
-                    saveProgress();
+                    localStorage.removeItem('candyGlossSave'); // Clear board state for new level
                 }
             }
 
@@ -692,11 +741,18 @@
 
             // --- Save and Load Progress ---
             function saveProgress() {
+                if(isChecking) return;
+                const boardState = squares.map(s => ({
+                    type: s.dataset.type,
+                    special: s.dataset.special
+                }));
+
                 const gameState = {
                     level: level,
                     score: score,
                     targetScore: targetScore,
                     difficulty: difficultySelect.value,
+                    board: boardState
                 };
                 localStorage.setItem('candyGlossSave', JSON.stringify(gameState));
             }
@@ -705,10 +761,11 @@
                 const savedStateJSON = localStorage.getItem('candyGlossSave');
                 if (savedStateJSON) {
                     const savedState = JSON.parse(savedStateJSON);
-                    level = savedState.level;
-                    score = savedState.score;
-                    targetScore = savedState.targetScore;
-                    difficultySelect.value = savedState.difficulty;
+                    level = savedState.level || 1;
+                    score = savedState.score || 0;
+                    targetScore = savedState.targetScore || 1000;
+                    difficultySelect.value = savedState.difficulty || 'Easy';
+                    savedBoardState = savedState.board;
                 }
             }
 
@@ -716,7 +773,6 @@
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredInstallPrompt = e;
-                // Ensure the install button is visible when the app is installable.
                 installButton.classList.remove('hidden');
             });
 
@@ -726,7 +782,6 @@
                     const { outcome } = await deferredInstallPrompt.userChoice;
                     console.log(`User response to the install prompt: ${outcome}`);
                     deferredInstallPrompt = null;
-                    // Hide the button after the user has interacted with the prompt.
                     installButton.classList.add('hidden');
                 }
             }
@@ -734,7 +789,7 @@
             // --- Service Worker for Offline Functionality ---
             if ('serviceWorker' in navigator) {
                 const swCode = `
-                    const CACHE_NAME = 'candy-gloss-cache-v2';
+                    const CACHE_NAME = 'candy-gloss-cache-v3';
                     const urlsToCache = [
                         '/',
                         'https://cdn.tailwindcss.com',
@@ -746,7 +801,15 @@
                             caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
                         );
                     });
-
+                     self.addEventListener('activate', event => {
+                        event.waitUntil(
+                            caches.keys().then(cacheNames => {
+                                return Promise.all(
+                                    cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
+                                );
+                            })
+                        );
+                    });
                     self.addEventListener('fetch', event => {
                         event.respondWith(
                             caches.match(event.request).then(response => {
@@ -768,5 +831,4 @@
     </script>
 </body>
 </html>
-
 
