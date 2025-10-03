@@ -164,7 +164,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-start md:justify-center p-2">
+<body class="min-h-screen flex flex-col items-center justify-start md:justify-center px-4 py-2">
 
     <div id="splash-screen" class="fixed inset-0 bg-gradient-to-br from-purple-600 to-pink-500 flex flex-col items-center justify-center z-50 transition-opacity duration-1000">
         <h1 class="text-7xl md:text-8xl text-white tracking-wider font-display" style="text-shadow: 4px 4px 6px rgba(0,0,0,0.4);">Candy Gloss</h1>
@@ -175,7 +175,7 @@
 
     <!-- The main container uses max-width to look good on desktop and w-full for mobile -->
     <div class="w-full max-w-lg mx-auto">
-        <header class="text-center mb-4">
+        <header class="text-center mb-2 md:mb-4">
             <h1 class="text-5xl md:text-6xl text-white tracking-wider" style="text-shadow: 3px 3px 5px rgba(0,0,0,0.3);">Candy Gloss</h1>
         </header>
 
@@ -207,13 +207,14 @@
         <div id="game-board" class="aspect-square w-full max-w-md mx-auto"></div>
     </div>
 
-    <div class="text-center mt-4 text-white" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+    <div class="text-center mt-2 md:mt-4 text-white" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
         <p>Created by Mirjan Ali Sha</p>
     </div>
 
-    <div class="flex space-x-4 mt-4">
+    <div class="flex space-x-2 md:space-x-4 mt-2 md:mt-4">
         <button id="save-button" class="action-button">Save</button>
         <button id="install-button" class="action-button hidden">Add App</button>
+        <button id="reset-button" class="action-button">Reset</button>
     </div>
 
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
@@ -240,6 +241,7 @@
             const difficultySelect = document.getElementById('difficulty-select');
             const saveButton = document.getElementById('save-button');
             const installButton = document.getElementById('install-button');
+            const resetButton = document.getElementById('reset-button');
             const modal = document.getElementById('modal');
             const modalContent = document.getElementById('modal-content');
             const modalTitle = document.getElementById('modal-title');
@@ -379,11 +381,13 @@
                     setTimeout(() => { saveButton.textContent = 'Save'; }, 2000);
                 });
                 installButton.addEventListener('click', installApp);
+                resetButton.addEventListener('click', resetGame);
             }
 
             function handleDifficultyChange() {
                 level = 1; score = 0; targetScore = 1000;
                 savedBoardState = null; // Clear saved board on difficulty change
+                localStorage.removeItem('candyGlossSave');
                 startGame();
             }
             
@@ -417,7 +421,6 @@
 
                 if (savedBoardState) {
                     reconstructBoard(savedBoardState);
-                    savedBoardState = null;
                 } else {
                     createNewBoard();
                     while (findAndProcessMatches(true).matchedIndices.size > 0) {
@@ -767,6 +770,11 @@
                     difficultySelect.value = savedState.difficulty || 'Easy';
                     savedBoardState = savedState.board;
                 }
+            }
+            
+            function resetGame() {
+                localStorage.removeItem('candyGlossSave');
+                location.reload();
             }
 
             // --- PWA Installation Logic ---
