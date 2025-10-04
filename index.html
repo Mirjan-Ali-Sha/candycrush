@@ -148,6 +148,15 @@
             50% { transform: scale(1.4); opacity: 0.7; }
             100% { transform: scale(0); opacity: 0; }
         }
+        
+        .hint {
+            animation: hint-pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes hint-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); box-shadow: 0 0 20px 5px #fff; }
+        }
 
         .selected {
             transform: scale(1.1);
@@ -224,8 +233,9 @@
         <p>Created by Mirjan Ali Sha</p>
     </div>
 
-    <div class="flex space-x-6 md:space-x-8 mt-4">
+    <div class="flex space-x-4 md:space-x-6 mt-4">
         <button id="save-button" class="action-button">Save</button>
+        <button id="hint-button" class="action-button">Hint</button>
         <button id="reset-button" class="action-button">Reset</button>
     </div>
     
@@ -257,6 +267,7 @@
             const difficultySelect = document.getElementById('difficulty-select');
             const saveButton = document.getElementById('save-button');
             const resetButton = document.getElementById('reset-button');
+            const hintButton = document.getElementById('hint-button');
             const modal = document.getElementById('modal');
             const modalContent = document.getElementById('modal-content');
             const modalTitle = document.getElementById('modal-title');
@@ -273,6 +284,7 @@
             let savedBoardState = null;
             
             const allCandyTypes = [
+
                 // Original Emojis
                 { type: '😀', color: 'yellow' }, { type: '❤️', color: 'red' },
                 { type: '🥳', color: 'purple' }, { type: '😎', color: 'blue' },
@@ -403,6 +415,7 @@
                     setTimeout(() => { saveButton.textContent = 'Save'; }, 2000);
                 });
                 resetButton.addEventListener('click', resetGame);
+                hintButton.addEventListener('click', showHint);
             }
 
             function handleDifficultyChange() {
@@ -806,20 +819,41 @@
                 location.reload();
             }
 
-            function checkForValidMoves() {
+            function findValidMove() {
                 for (let i = 0; i < width * width; i++) {
                     const type = squares[i].dataset.type;
                     if (!type) continue;
                     // Check swap right
                     if (i % width < width - 1) {
-                        if (checkMove(i, i + 1)) return true;
+                        if (checkMove(i, i + 1)) return [i, i + 1];
                     }
                     // Check swap down
                     if (i < width * (width - 1)) {
-                        if (checkMove(i, i + width)) return true;
+                        if (checkMove(i, i + width)) return [i, i + width];
                     }
                 }
-                return false;
+                return null;
+            }
+
+            async function showHint() {
+                if (isChecking) return;
+                isChecking = true;
+                const move = findValidMove();
+                if (move) {
+                    const [id1, id2] = move;
+                    squares[id1].classList.add('hint');
+                    squares[id2].classList.add('hint');
+
+                    await new Promise(r => setTimeout(r, 1500));
+
+                    squares[id1].classList.remove('hint');
+                    squares[id2].classList.remove('hint');
+                }
+                isChecking = false;
+            }
+
+            function checkForValidMoves() {
+                return findValidMove() !== null;
             }
 
             function checkMove(id1, id2) {
