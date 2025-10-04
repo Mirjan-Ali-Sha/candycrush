@@ -30,9 +30,6 @@
             background-size: 400% 400%;
         }
 
-        /* OPTIMIZATION: Removed the resource-intensive background-pan animation. */
-        /* @keyframes background-pan ... */
-
         #game-board {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
@@ -107,39 +104,40 @@
             );
         }
 
+        /* --- Candy Color Palette --- */
+        .candy.yellow { background: radial-gradient(circle at 30% 30%, #fef08a, #eab308); }
+        .candy.purple { background: radial-gradient(circle at 30% 30%, #c4b5fd, #8b5cf6); }
+        .candy.blue { background: radial-gradient(circle at 30% 30%, #93c5fd, #3b82f6); }
+        .candy.indigo { background: radial-gradient(circle at 30% 30%, #a5b4fc, #6366f1); }
+        .candy.maroon { background: radial-gradient(circle at 30% 30%, #fda4af, #f43f5e); }
+        .candy.teal { background: radial-gradient(circle at 30% 30%, #6ee7b7, #10b981); }
+        .candy.gold { background: radial-gradient(circle at 30% 30%, #fde047, #facc15); }
 
-        /* Candy colors with radial gradients */
-        .candy.red { background: radial-gradient(circle at 30% 30%, #ff7675, #d63031); }
-        .candy.yellow { background: radial-gradient(circle at 30% 30%, #fdcb6e, #fab1a0); }
-        .candy.orange { background: radial-gradient(circle at 30% 30%, #f0932b, #e67e22); }
-        .candy.purple { background: radial-gradient(circle at 30% 30%, #a29bfe, #8e44ad); }
-        .candy.green { background: radial-gradient(circle at 30% 30%, #55efc4, #00b894); }
-        .candy.blue { background: radial-gradient(circle at 30% 30%, #74b9ff, #3498db); }
-        .candy.pink { background: radial-gradient(circle at 30% 30%, #ff79c6, #ff55a3); }
-        .candy.lime { background: radial-gradient(circle at 30% 30%, #a2e233, #72b000); }
-        /* New attractive colors */
-        .candy.cyan { background: radial-gradient(circle at 30% 30%, #4dd0e1, #0097a7); }
-        .candy.rose { background: radial-gradient(circle at 30% 30%, #f48fb1, #f06292); }
-        .candy.indigo { background: radial-gradient(circle at 30% 30%, #7986cb, #3f51b5); }
-        .candy.maroon { background: radial-gradient(circle at 30% 30%, #e57373, #c62828); }
-        /* Added more new colors for variety */
-        .candy.brown { background: radial-gradient(circle at 30% 30%, #bcaaa4, #795548); }
-        .candy.gray { background: radial-gradient(circle at 30% 30%, #e0e0e0, #9e9e9e); }
-        .candy.teal { background: radial-gradient(circle at 30% 30%, #4db6ac, #00897b); }
-        .candy.gold { background: radial-gradient(circle at 30% 30%, #fff59d, #fbc02d); }
+        .candy.strawberry { background: radial-gradient(circle at 30% 30%, #fca5a5, #ef4444); }
+        .candy.tangerine { background: radial-gradient(circle at 30% 30%, #fdba74, #f97316); }
+        .candy.lemon { background: radial-gradient(circle at 30% 30%, #fde68a, #f59e0b); }
+        .candy.kiwi { background: radial-gradient(circle at 30% 30%, #a7f3d0, #34d399); }
+        .candy.apple { background: radial-gradient(circle at 30% 30%, #bbf7d0, #4ade80); }
+        .candy.blueberry { background: radial-gradient(circle at 30% 30%, #67e8f9, #06b6d4); }
+        .candy.grape { background: radial-gradient(circle at 30% 30%, #a5b4fc, #6366f1); }
+        .candy.eggplant { background: radial-gradient(circle at 30% 30%, #d8b4fe, #a855f7); }
+        .candy.candyfloss { background: radial-gradient(circle at 30% 30%, #f9a8d4, #ec4899); }
+        .candy.donut { background: radial-gradient(circle at 30% 30%, #fda4af, #f43f5e); }
+        .candy.cupcake { background: radial-gradient(circle at 30% 30%, #f0abfc, #e879f9); }
+        .candy.cookie { background: radial-gradient(circle at 30% 30%, #fbbf24, #d97706); }
+        .candy.chocolate { background: radial-gradient(circle at 30% 30%, #d4a77e, #92400e); }
+        .candy.coconut { background: radial-gradient(circle at 30% 30%, #e2e8f0, #94a3b8); }
         
         /* Color bomb new effect */
         .color-bomb-effect {
             animation: pulse-bomb 1.5s infinite;
         }
         
-        /* OPTIMIZATION: Replaced expensive box-shadow animation with a lightweight transform animation. */
         @keyframes pulse-bomb {
             0% { transform: scale(1); }
             50% { transform: scale(1.08); }
             100% { transform: scale(1); }
         }
-
 
         .candy.matched {
             animation: pop 0.5s ease-out forwards;
@@ -161,7 +159,6 @@
             pointer-events: none;
         }
         
-        /* Improved button styling */
         .action-button {
             @apply font-display text-lg text-white font-bold py-2 px-8 rounded-full transition-transform duration-200;
             background: linear-gradient(145deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
@@ -275,8 +272,8 @@
             let isChecking = false;
             let savedBoardState = null;
             
-            // Expanded list with more attractive emojis and distinct colors
             const allCandyTypes = [
+                // Original Emojis
                 { type: '😀', color: 'yellow' }, { type: '❤️', color: 'red' },
                 { type: '🥳', color: 'purple' }, { type: '😎', color: 'blue' },
                 { type: '🐙', color: 'pink' },   { type: '🦋', color: 'indigo' },
@@ -306,7 +303,7 @@
 
             function updateDifficulty() {
                 const difficulty = difficultySelect.value;
-                const difficultyMap = { 'Easy': 6, 'Medium': 8, 'Hard': 11, 'Expert': 14 };
+                const difficultyMap = { 'Easy': 6, 'Medium': 9, 'Hard': 13, 'Expert': 18 };
                 const shuffledCandies = [...allCandyTypes].sort(() => 0.5 - Math.random());
                 currentCandyTypes = shuffledCandies.slice(0, difficultyMap[difficulty]);
             }
@@ -446,10 +443,13 @@
                 if (savedBoardState) {
                     reconstructBoard(savedBoardState);
                 } else {
-                    createNewBoard();
-                    while (findAndProcessMatches(true).matchedIndices.size > 0) {
+                    let boardIsValid = false;
+                    while(!boardIsValid) {
                         grid.innerHTML = ''; squares = [];
                         createNewBoard();
+                        if (!findAndProcessMatches(true).matchedIndices.size > 0 && checkForValidMoves()) {
+                            boardIsValid = true;
+                        }
                     }
                 }
                 
@@ -549,7 +549,14 @@
                         boardCanChange = false;
                     }
                 }
-                if(boardWasChanged) checkLevelComplete();
+
+                if(boardWasChanged) {
+                    checkLevelComplete();
+                    if (!isChecking && !checkForValidMoves()) {
+                        await shuffleBoard();
+                    }
+                }
+                
                 return boardWasChanged;
             }
 
@@ -756,7 +763,16 @@
             }
 
             function showModal(title, message, buttonText) {
-                modalTitle.textContent = title; modalMessage.innerHTML = message; modalScore.textContent = score; modalButton.textContent = buttonText;
+                modalTitle.textContent = title;
+                modalMessage.innerHTML = message;
+                modalButton.textContent = buttonText;
+
+                if (!buttonText) {
+                    modalButton.classList.add('hidden');
+                } else {
+                    modalButton.classList.remove('hidden');
+                }
+                
                 modal.classList.remove('hidden');
                 setTimeout(() => { modalContent.classList.remove('scale-95', 'opacity-0'); }, 50);
             }
@@ -766,21 +782,10 @@
                 setTimeout(() => { modal.classList.add('hidden'); if (modalButton.textContent.toLowerCase().includes('level')) setTimeout(startGame, 300); }, 300);
             });
 
-            // --- Save and Load Progress ---
             function saveProgress() {
                 if(isChecking) return;
-                const boardState = squares.map(s => ({
-                    type: s.dataset.type,
-                    special: s.dataset.special
-                }));
-
-                const gameState = {
-                    level: level,
-                    score: score,
-                    targetScore: targetScore,
-                    difficulty: difficultySelect.value,
-                    board: boardState
-                };
+                const boardState = squares.map(s => ({ type: s.dataset.type, special: s.dataset.special }));
+                const gameState = { level, score, targetScore, difficulty: difficultySelect.value, board: boardState };
                 localStorage.setItem('candyGlossSave', JSON.stringify(gameState));
             }
 
@@ -800,43 +805,87 @@
                 localStorage.removeItem('candyGlossSave');
                 location.reload();
             }
+
+            function checkForValidMoves() {
+                for (let i = 0; i < width * width; i++) {
+                    const type = squares[i].dataset.type;
+                    if (!type) continue;
+                    // Check swap right
+                    if (i % width < width - 1) {
+                        if (checkMove(i, i + 1)) return true;
+                    }
+                    // Check swap down
+                    if (i < width * (width - 1)) {
+                        if (checkMove(i, i + width)) return true;
+                    }
+                }
+                return false;
+            }
+
+            function checkMove(id1, id2) {
+                // Temporarily swap
+                const type1 = squares[id1].dataset.type;
+                const type2 = squares[id2].dataset.type;
+                squares[id1].dataset.type = type2;
+                squares[id2].dataset.type = type1;
+
+                let hasMatch = false;
+                const allPotentialMatches = findAllMatches();
+                if (allPotentialMatches.length > 0) {
+                    hasMatch = true;
+                }
+
+                // Swap back
+                squares[id1].dataset.type = type1;
+                squares[id2].dataset.type = type2;
+                return hasMatch;
+            }
+
+            async function shuffleBoard() {
+                isChecking = true;
+                showModal("No More Moves!", "Shuffling the board...", null);
+                await new Promise(r => setTimeout(r, 1500));
+
+                let boardIsValid = false;
+                while(!boardIsValid) {
+                    const boardState = squares.map(s => ({
+                        className: s.className,
+                        innerHTML: s.innerHTML,
+                        type: s.dataset.type,
+                        special: s.dataset.special
+                    }));
+                    
+                    boardState.sort(() => 0.5 - Math.random());
+                    
+                    squares.forEach((s, i) => {
+                        s.className = boardState[i].className;
+                        s.innerHTML = boardState[i].innerHTML;
+                        s.dataset.type = boardState[i].type;
+                        s.dataset.special = boardState[i].special;
+                    });
+
+                    if (!findAndProcessMatches(true).matchedIndices.size > 0 && checkForValidMoves()) {
+                        boardIsValid = true;
+                    }
+                }
+                
+                modalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => { modal.classList.add('hidden'); }, 300);
+                isChecking = false;
+            }
             
-            // --- Service Worker for Offline Functionality ---
             if ('serviceWorker' in navigator) {
                 const swCode = `
-                    const CACHE_NAME = 'candy-gloss-cache-v3';
-                    const urlsToCache = [
-                        '/',
-                        'https://cdn.tailwindcss.com',
-                        'https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;700&display=swap'
-                    ];
-
-                    self.addEventListener('install', event => {
-                        event.waitUntil(
-                            caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-                        );
-                    });
-                     self.addEventListener('activate', event => {
-                        event.waitUntil(
-                            caches.keys().then(cacheNames => {
-                                return Promise.all(
-                                    cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
-                                );
-                            })
-                        );
-                    });
-                    self.addEventListener('fetch', event => {
-                        event.respondWith(
-                            caches.match(event.request).then(response => {
-                                return response || fetch(event.request);
-                            })
-                        );
-                    });
+                    const CACHE_NAME = 'candy-gloss-cache-v4';
+                    const urlsToCache = ['/', 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;700&display=swap'];
+                    self.addEventListener('install', e => e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(urlsToCache))));
+                    self.addEventListener('activate', e => e.waitUntil(caches.keys().then(cN => Promise.all(cN.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))))));
+                    self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
                 `;
                 const blob = new Blob([swCode], { type: 'application/javascript' });
                 const swUrl = URL.createObjectURL(blob);
                 navigator.serviceWorker.register(swUrl)
-                    .then(() => console.log('Service Worker registered successfully.'))
+                    .then(() => console.log('Service Worker registered.'))
                     .catch(error => console.log('Service Worker registration failed:', error));
             }
             
