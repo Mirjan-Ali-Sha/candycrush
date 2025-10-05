@@ -305,7 +305,7 @@
             
             const bombTypes = [
                 // Re-ordered by level and changed 'chance' to 'weight' for weighted random selection.
-                { emoji: '💣', color: 'coconut', level: 5, radius: 1, weight: 10 }, // Most common
+                { emoji: '💣', color: 'coconut', level: 10, radius: 1, weight: 10 }, // Most common
                 { emoji: '💥', color: 'gold', level: 20, radius: 2, weight: 5 },  // Less common
                 { emoji: '🔥', color: 'maroon', level: 30, radius: 3, weight: 2 }   // Rarest
             ];
@@ -851,7 +851,9 @@
 
             function checkLevelComplete() {
                 if (score >= targetScore) {
-                    level++; score = 0; targetScore = Math.floor(targetScore * 1.5);
+                    level++; 
+                    score = 0; 
+                    targetScore = Math.floor(targetScore * 1.2);
                     let newDifficulty = 'Easy';
                     if (level >= 10) newDifficulty = 'Expert';
                     else if (level >= 7) newDifficulty = 'Hard';
@@ -1023,5 +1025,4 @@
     </script>
 </body>
 </html>
-
 
