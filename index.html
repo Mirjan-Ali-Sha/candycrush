@@ -129,7 +129,7 @@
         .candy.coconut { background: radial-gradient(circle at 30% 30%, #e2e8f0, #94a3b8); }
         
         /* Color bomb new effect */
-        .color-bomb-effect {
+        .color-bomb-effect, .spawned-bomb {
             animation: pulse-bomb 1.5s infinite;
         }
         
@@ -302,6 +302,13 @@
                 { type: '🧁', color: 'cupcake' }, { type: '🍪', color: 'cookie' },
                 { type: '🍫', color: 'chocolate' }, { type: '🥥', color: 'coconut' },
             ];
+            
+            const bombTypes = [
+                // Re-ordered by level and changed 'chance' to 'weight' for weighted random selection.
+                { emoji: '💣', color: 'coconut', level: 10, radius: 1, weight: 10 }, // Most common
+                { emoji: '💥', color: 'gold', level: 20, radius: 2, weight: 5 },  // Less common
+                { emoji: '🔥', color: 'maroon', level: 30, radius: 3, weight: 2 }   // Rarest
+            ];
             let currentCandyTypes = [];
 
             let candyIdBeingDragged;
@@ -309,7 +316,7 @@
             let candyIdSelectedByClick = null;
             
             function getCandyDetails(type) {
-                return allCandyTypes.find(c => c.type === type);
+                return allCandyTypes.find(c => c.type === type) || bombTypes.find(b => b.emoji === type);
             }
 
             function updateDifficulty() {
@@ -325,11 +332,7 @@
                     square.setAttribute('draggable', true);
                     square.setAttribute('id', i);
                     
-                    const randomCandy = currentCandyTypes[Math.floor(Math.random() * currentCandyTypes.length)];
-                    square.className = `candy ${randomCandy.color}`;
-                    square.innerHTML = randomCandy.type;
-                    square.dataset.type = randomCandy.type;
-                    square.dataset.special = 'none';
+                    fillSquare(square);
 
                     grid.appendChild(square);
                     squares.push(square);
@@ -357,6 +360,10 @@
                         }
                         if (savedCandy.special.startsWith('striped')) {
                             square.classList.add(savedCandy.special);
+                        }
+                         if (savedCandy.special.startsWith('bomb')) {
+                            square.dataset.bombRadius = savedCandy.bombRadius;
+                            square.classList.add('spawned-bomb');
                         }
 
                     } else {
@@ -534,9 +541,9 @@
             
             function swapCandies(id1, id2) {
                 const s1 = squares[id1], s2 = squares[id2];
-                const class1 = s1.className, inner1 = s1.innerHTML, type1 = s1.dataset.type, special1 = s1.dataset.special;
-                s1.className = s2.className; s1.innerHTML = s2.innerHTML; s1.dataset.type = s2.dataset.type; s1.dataset.special = s2.dataset.special;
-                s2.className = class1; s2.innerHTML = inner1; s2.dataset.type = type1; s2.dataset.special = special1;
+                const class1 = s1.className, inner1 = s1.innerHTML, type1 = s1.dataset.type, special1 = s1.dataset.special, radius1 = s1.dataset.bombRadius;
+                s1.className = s2.className; s1.innerHTML = s2.innerHTML; s1.dataset.type = s2.dataset.type; s1.dataset.special = s2.dataset.special; s1.dataset.bombRadius = s2.dataset.bombRadius;
+                s2.className = class1; s2.innerHTML = inner1; s2.dataset.type = type1; s2.dataset.special = special1; s2.dataset.bombRadius = radius1;
             }
 
             async function gameLoop(isUserSwap = false, id1, id2) {
@@ -553,9 +560,15 @@
                     }
 
                     matchedIndices.forEach(index => {
-                        const specialType = squares[index]?.dataset.special;
-                        if (specialType === 'wrapped' || specialType.startsWith('striped')) {
-                            activateSpecialOnCascade(index, toCrush);
+                        const s = squares[index];
+                        if (s) {
+                           const specialType = s.dataset.special;
+                           if (specialType === 'wrapped' || specialType.startsWith('striped')) {
+                               activateSpecialOnCascade(index, toCrush);
+                           } else if (specialType.startsWith('bomb')) {
+                               const radius = parseInt(s.dataset.bombRadius, 10);
+                               blastArea(index, radius, toCrush);
+                           }
                         }
                     });
 
@@ -583,40 +596,46 @@
             }
 
             function findAndProcessMatches(isCheckOnly = false) {
-                const tempMatchedIndices = new Set();
-                let specialCreations = []; 
+                const matchedIndices = new Set();
+                let specialCreations = [];
+            
+                // Priority 1: Find T and L shapes first for Wrapped Candies
+                const tAndLMatches = findTandLMatches();
+                tAndLMatches.forEach(match => {
+                    match.indices.forEach(id => matchedIndices.add(id));
+                    if (!isCheckOnly) {
+                        specialCreations.push({ index: match.center, specialType: 'wrapped' });
+                    }
+                });
+
                 const allMatches = findAllMatches();
 
+                // Priority 2: Find 5-in-a-row matches for Color Bombs
                 const fiveMatches = allMatches.filter(m => m.length === 5);
                 fiveMatches.forEach(match => {
-                    match.forEach(id => tempMatchedIndices.add(id));
+                    if ([...match].some(id => matchedIndices.has(id))) return;
+                    match.forEach(id => matchedIndices.add(id));
                     if(!isCheckOnly) specialCreations.push({ index: match[0], specialType: 'color-bomb' });
                 });
 
+                // Priority 3: Find 4-in-a-row matches for Striped Candies
                 const fourMatches = allMatches.filter(m => m.length === 4);
                 fourMatches.forEach(match => {
-                    if ([...match].some(id => tempMatchedIndices.has(id))) return;
-                    match.forEach(id => tempMatchedIndices.add(id));
+                    if ([...match].some(id => matchedIndices.has(id))) return;
+                    match.forEach(id => matchedIndices.add(id));
                     if(!isCheckOnly) {
                         const orientation = (match[1] - match[0] === 1) ? '-h' : '-v';
                         specialCreations.push({ index: match[0], specialType: 'striped' + orientation });
                     }
                 });
-
-                const threeMatches = allMatches.filter(m => m.length === 3);
-                const centers = findTandLMatches(threeMatches, tempMatchedIndices);
-                centers.forEach(centerInfo => {
-                    if(isCheckOnly) return;
-                    centerInfo.hMatch.forEach(id => tempMatchedIndices.add(id));
-                    centerInfo.vMatch.forEach(id => tempMatchedIndices.add(id));
-                    specialCreations.push({ index: centerInfo.center, specialType: 'wrapped' });
-                });
                 
+                // Priority 4: Find normal 3-in-a-row matches
+                const threeMatches = allMatches.filter(m => m.length === 3);
                 threeMatches.forEach(match => {
-                     if ([...match].some(id => tempMatchedIndices.has(id))) return;
-                     match.forEach(id => tempMatchedIndices.add(id));
+                     if ([...match].some(id => matchedIndices.has(id))) return;
+                     match.forEach(id => matchedIndices.add(id));
                 });
-                const matchedIndices = tempMatchedIndices;
+
                 return { matchedIndices, specialCreations };
             }
 
@@ -624,7 +643,7 @@
                 const matches = [];
                 for(let i=0; i<width*width; i++) {
                     const type = squares[i].dataset.type;
-                    if(!type) continue;
+                    if(!type || squares[i].dataset.special.startsWith('bomb')) continue;
                     let hMatch = [i];
                     for(let j=1; i%width+j < width && squares[i+j]?.dataset.type === type; j++) hMatch.push(i+j);
                     if(hMatch.length >= 3) matches.push(hMatch);
@@ -636,21 +655,39 @@
                 return matches;
             }
 
-            function findTandLMatches(threeMatches, matchedIndices) {
-                 const centers = [];
-                 for(let i=0; i<width*width; i++) {
-                     if(!squares[i].dataset.type || matchedIndices.has(i)) continue;
-                     const hMatch = threeMatches.find(m => m.includes(i) && m[1]-m[0] === 1);
-                     const vMatch = threeMatches.find(m => m.includes(i) && m[1]-m[0] === width);
-                     if(hMatch && vMatch && ![...hMatch, ...vMatch].some(id => matchedIndices.has(id))) {
-                         centers.push({ center: i, hMatch, vMatch });
-                     }
-                 }
-                 return centers;
+            function findTandLMatches() {
+                const tAndLMatches = [];
+                const processed = new Set(); 
+
+                for (let i = 0; i < width * width; i++) {
+                    if (processed.has(i) || !squares[i].dataset.type) continue;
+                    
+                    const type = squares[i].dataset.type;
+                    let hArm = [i];
+                    let vArm = [i];
+
+                    // Check horizontal arm
+                    for (let j = i + 1; j % width !== 0 && j < width * width && squares[j].dataset.type === type; j++) hArm.push(j);
+                    for (let j = i - 1; (j + 1) % width !== 0 && j >= 0 && squares[j].dataset.type === type; j--) hArm.push(j);
+
+                    // Check vertical arm
+                    for (let j = i + width; j < width * width && squares[j].dataset.type === type; j += width) vArm.push(j);
+                    for (let j = i - width; j >= 0 && squares[j].dataset.type === type; j -= width) vArm.push(j);
+
+                    if (hArm.length >= 3 && vArm.length >= 3) {
+                        const combinedIndices = new Set([...hArm, ...vArm]);
+                        tAndLMatches.push({ center: i, indices: combinedIndices });
+                        combinedIndices.forEach(id => processed.add(id));
+                    }
+                }
+                return tAndLMatches;
             }
             
             async function createSpecialCandies(creations) {
+                const createdOn = new Set();
                 for (const creation of creations) {
+                    if (createdOn.has(creation.index)) continue;
+
                     const s = squares[creation.index];
                     if (s) {
                         s.dataset.special = creation.specialType;
@@ -662,6 +699,7 @@
                         else if (creation.specialType.startsWith('striped')) {
                             s.classList.add(creation.specialType);
                         }
+                        createdOn.add(creation.index);
                     }
                 }
             }
@@ -674,6 +712,7 @@
                     toCrush.add(id1); toCrush.add(id2);
                     if (special1.startsWith('striped')) blastLine(id1, special1, toCrush);
                     if (special1 === 'wrapped') blastSquare(id1, toCrush);
+                    if (special1.startsWith('bomb')) blastArea(id1, parseInt(s1.dataset.bombRadius), toCrush);
                     if (special1 === 'color-bomb') {
                         let targetType = s2.dataset.type;
                         if (special2 !== 'none' || !targetType) targetType = findMostCommonColor();
@@ -681,6 +720,7 @@
                     }
                     if (special2.startsWith('striped')) blastLine(id2, special2, toCrush);
                     if (special2 === 'wrapped') blastSquare(id2, toCrush);
+                     if (special2.startsWith('bomb')) blastArea(id2, parseInt(s2.dataset.bombRadius), toCrush);
                     if (special2 === 'color-bomb') {
                         let targetType = s1.dataset.type;
                         if (special1 !== 'none' || !targetType) targetType = findMostCommonColor();
@@ -689,15 +729,17 @@
                     return;
                 }
 
-                if (special1 === 'wrapped' || special1 === 'color-bomb') {
+                if (special1 !== 'none' && !special1.startsWith('striped')) {
                     toCrush.add(id1); toCrush.add(id2);
                     if (special1 === 'wrapped') blastSquare(id1, toCrush);
+                    if (special1.startsWith('bomb')) blastArea(id1, parseInt(s1.dataset.bombRadius), toCrush);
                     if (special1 === 'color-bomb') blastColor(s2.dataset.type, toCrush);
                     return;
                 }
-                if (special2 === 'wrapped' || special2 === 'color-bomb') {
+                if (special2 !== 'none' && !special2.startsWith('striped')) {
                     toCrush.add(id1); toCrush.add(id2);
                     if (special2 === 'wrapped') blastSquare(id2, toCrush);
+                    if (special2.startsWith('bomb')) blastArea(id2, parseInt(s2.dataset.bombRadius), toCrush);
                     if (special2 === 'color-bomb') blastColor(s1.dataset.type, toCrush);
                     return;
                 }
@@ -714,6 +756,16 @@
                 squares.forEach(s => { if(s.dataset.type) counts[s.dataset.type] = (counts[s.dataset.type] || 0) + 1; });
                 return Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, null);
             }
+            
+            function blastArea(index, radius, toCrush) {
+                const col = index % width;
+                const row = Math.floor(index / width);
+                for(let r = Math.max(0, row - radius); r <= Math.min(width - 1, row + radius); r++){
+                    for(let c = Math.max(0, col - radius); c <= Math.min(width - 1, col + radius); c++){
+                        toCrush.add(r*width + c);
+                    }
+                }
+            }
 
             function blastLine(index, type, toCrush) {
                 const row = Math.floor(index/width), col = index % width;
@@ -724,12 +776,7 @@
                 }
             }
             function blastSquare(index, toCrush) {
-                for(let r = -1; r <= 1; r++){
-                    for(let c = -1; c <= 1; c++){
-                        const newIndex = index + r*width + c;
-                        if(newIndex >=0 && newIndex < width*width) toCrush.add(newIndex);
-                    }
-                }
+                blastArea(index, 1, toCrush);
             }
             function blastColor(type, toCrush) {
                 if (!type) return;
@@ -742,7 +789,7 @@
                 indices.forEach(i => {
                     const s = squares[i];
                     if(s) {
-                        s.innerHTML = ''; s.dataset.type = ''; s.dataset.special = 'none';
+                        s.innerHTML = ''; s.dataset.type = ''; s.dataset.special = 'none'; s.dataset.bombRadius = '';
                         s.className = 'candy';
                     }
                 });
@@ -758,15 +805,46 @@
                 }
                 await new Promise(r => setTimeout(r, 100));
             }
+
+            function fillSquare(square) {
+                const BOMB_SPAWN_PROBABILITY = 0.08; // 8% chance to spawn ANY bomb
+
+                // 1. Get a list of all bombs available at the current level.
+                const availableBombs = bombTypes.filter(bomb => level >= bomb.level);
+
+                // 2. If there are available bombs, decide if we should spawn one.
+                if (availableBombs.length > 0 && Math.random() < BOMB_SPAWN_PROBABILITY) {
+                    
+                    // A bomb should spawn. Now, which one? Use weights for selection.
+                    const totalWeight = availableBombs.reduce((sum, bomb) => sum + bomb.weight, 0);
+                    let random = Math.random() * totalWeight;
+
+                    for (const bomb of availableBombs) {
+                        if (random < bomb.weight) {
+                            // This is the bomb to spawn.
+                            square.className = `candy ${bomb.color} spawned-bomb`;
+                            square.innerHTML = bomb.emoji;
+                            square.dataset.type = bomb.emoji;
+                            square.dataset.special = `bomb-${bomb.radius}`;
+                            square.dataset.bombRadius = bomb.radius;
+                            return;
+                        }
+                        random -= bomb.weight;
+                    }
+                }
+
+                // Otherwise, spawn a regular candy
+                const randomCandy = currentCandyTypes[Math.floor(Math.random() * currentCandyTypes.length)];
+                square.className = `candy ${randomCandy.color}`;
+                square.innerHTML = randomCandy.type;
+                square.dataset.type = randomCandy.type;
+                square.dataset.special = 'none';
+            }
             
             async function fillEmptyCandies() {
                 for (let i = 0; i < width * width; i++) {
                     if (squares[i].dataset.type === '') {
-                         const randomCandy = currentCandyTypes[Math.floor(Math.random() * currentCandyTypes.length)];
-                         squares[i].className = `candy ${randomCandy.color}`;
-                         squares[i].innerHTML = randomCandy.type;
-                         squares[i].dataset.type = randomCandy.type;
-                         squares[i].dataset.special = 'none';
+                         fillSquare(squares[i]);
                     }
                 }
             }
@@ -806,7 +884,7 @@
 
             function saveProgress() {
                 if(isChecking) return;
-                const boardState = squares.map(s => ({ type: s.dataset.type, special: s.dataset.special }));
+                const boardState = squares.map(s => ({ type: s.dataset.type, special: s.dataset.special, bombRadius: s.dataset.bombRadius }));
                 const gameState = { level, score, targetScore, difficulty: difficultySelect.value, board: boardState };
                 localStorage.setItem('candyGlossSave', JSON.stringify(gameState));
             }
@@ -830,8 +908,6 @@
 
             function findValidMove() {
                 for (let i = 0; i < width * width; i++) {
-                    const type = squares[i].dataset.type;
-                    if (!type) continue;
                     // Check swap right
                     if (i % width < width - 1) {
                         if (checkMove(i, i + 1)) return [i, i + 1];
@@ -866,21 +942,23 @@
             }
 
             function checkMove(id1, id2) {
+                const s1 = squares[id1], s2 = squares[id2];
                 // Temporarily swap
-                const type1 = squares[id1].dataset.type;
-                const type2 = squares[id2].dataset.type;
-                squares[id1].dataset.type = type2;
-                squares[id2].dataset.type = type1;
+                const type1 = s1.dataset.type, special1 = s1.dataset.special, radius1 = s1.dataset.bombRadius;
+                const type2 = s2.dataset.type, special2 = s2.dataset.special, radius2 = s2.dataset.bombRadius;
+
+                s1.dataset.type = type2; s1.dataset.special = special2; s1.dataset.bombRadius = radius2;
+                s2.dataset.type = type1; s2.dataset.special = special1; s2.dataset.bombRadius = radius1;
 
                 let hasMatch = false;
-                const allPotentialMatches = findAllMatches();
-                if (allPotentialMatches.length > 0) {
+                if (findAllMatches().length > 0) {
                     hasMatch = true;
                 }
 
                 // Swap back
-                squares[id1].dataset.type = type1;
-                squares[id2].dataset.type = type2;
+                s1.dataset.type = type1; s1.dataset.special = special1; s1.dataset.bombRadius = radius1;
+                s2.dataset.type = type2; s2.dataset.special = special2; s2.dataset.bombRadius = radius2;
+                
                 return hasMatch;
             }
 
@@ -895,7 +973,8 @@
                         className: s.className,
                         innerHTML: s.innerHTML,
                         type: s.dataset.type,
-                        special: s.dataset.special
+                        special: s.dataset.special,
+                        bombRadius: s.dataset.bombRadius
                     }));
                     
                     boardState.sort(() => 0.5 - Math.random());
@@ -905,6 +984,7 @@
                         s.innerHTML = boardState[i].innerHTML;
                         s.dataset.type = boardState[i].type;
                         s.dataset.special = boardState[i].special;
+                        s.dataset.bombRadius = boardState[i].bombRadius;
                     });
 
                     if (!findAndProcessMatches(true).matchedIndices.size > 0 && checkForValidMoves()) {
@@ -943,4 +1023,5 @@
     </script>
 </body>
 </html>
+
 
