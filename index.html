@@ -817,7 +817,7 @@
             }
 
             function fillSquare(square) {
-                const BOMB_SPAWN_PROBABILITY = 0.04; // 4% chance to spawn ANY bomb
+                const BOMB_SPAWN_PROBABILITY = 0.03; // Reduced from 0.04 (4%) to 0.03 (3%)
 
                 // 1. Get a list of all bombs available at the current level.
                 const availableBombs = bombTypes.filter(bomb => level >= bomb.level);
