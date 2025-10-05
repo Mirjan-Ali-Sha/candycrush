@@ -283,6 +283,291 @@
             let isChecking = false;
             let savedBoardState = null;
             
+            const allCandyTypes = [<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Viewport meta tag is crucial for responsive design on mobile devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glossy Candy Crush</title>
+    <!-- Favicon for the website tab -->
+    <link rel="icon" href="https://raw.githubusercontent.com/Mirjan-Ali-Sha/candycrush/main/icon.png">
+    <!-- PWA Manifest for "Add to Home Screen" functionality -->
+    <link rel="manifest" href="data:application/manifest+json;base64,eyJtYW1lIjoiQ2FuZHkgR2xvc3MiLCJzaG9ydF9uYW1lIjoiQ2FuZHkgR2xvc3MiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzliNTliNiIsInRoZW1lX2NvbG9yIjoiI2YwNjE5OCIsImRlc2NyaXB0aW9uIjoiQSBnbG9zc3kgYW5kIGZ1biBjYW5keSBtYXRjaGluZyBnYW1lLiIsImljb25zIjpbeyJzcmMiOiJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vTWlyamFuLUFsaS1TaGEvY2FuZHljcnVzaC9tYWluL2ljb24ucG5nIiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3BuZyJ9LHsic3JjIjoiaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL01pcmphbi1BbGktU2hhL2NhbmR5Y3J1c2gvbWFpbi9pY29uLnBuZyIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9wbmcifV19">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Prevents scrolling and pull-to-refresh on touch devices for a better game experience */
+            touch-action: none; 
+        }
+
+        h1, h2, .font-display {
+            font-family: 'Fredoka One', cursive;
+        }
+        
+        body {
+            /* OPTIMIZATION: Replaced the constantly animating gradient with a static one to reduce GPU load. */
+            background: linear-gradient(135deg, #f06198, #9b59b6, #3498db);
+            background-size: 400% 400%;
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 4px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .candy {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Clamp ensures font size is responsive and readable on all screens */
+            font-size: clamp(20px, 6vw, 32px); 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .candy::before {
+            content: '';
+            position: absolute;
+            top: 2%;
+            left: 10%;
+            width: 80%;
+            height: 40%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+            border-radius: 50% / 25%;
+            transform: rotate(15deg);
+            z-index: 2;
+        }
+
+        /* Striped candy overlays - Made more visible */
+        .striped-h::after, .striped-v::after {
+            content: '';
+            position: absolute;
+            z-index: 1;
+            border-radius: 50%;
+        }
+        .striped-h::after {
+            width: 100%;
+            height: 14px; /* Increased thickness */
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(255,255,255,0.7), /* Increased opacity */
+                rgba(255,255,255,0.7) 10px,
+                transparent 10px,
+                transparent 20px
+            );
+        }
+        .striped-v::after {
+            width: 14px; /* Increased thickness */
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(255,255,255,0.7), /* Increased opacity */
+                rgba(255,255,255,0.7) 10px,
+                transparent 10px,
+                transparent 20px
+            );
+        }
+
+        /* --- Candy Color Palette --- */
+        .candy.yellow { background: radial-gradient(circle at 30% 30%, #fef08a, #eab308); }
+        .candy.purple { background: radial-gradient(circle at 30% 30%, #c4b5fd, #8b5cf6); }
+        .candy.blue { background: radial-gradient(circle at 30% 30%, #93c5fd, #3b82f6); }
+        .candy.indigo { background: radial-gradient(circle at 30% 30%, #a5b4fc, #6366f1); }
+        .candy.maroon { background: radial-gradient(circle at 30% 30%, #fda4af, #f43f5e); }
+        .candy.teal { background: radial-gradient(circle at 30% 30%, #6ee7b7, #10b981); }
+        .candy.gold { background: radial-gradient(circle at 30% 30%, #fde047, #facc15); }
+
+        .candy.strawberry { background: radial-gradient(circle at 30% 30%, #fca5a5, #ef4444); }
+        .candy.tangerine { background: radial-gradient(circle at 30% 30%, #fdba74, #f97316); }
+        .candy.lemon { background: radial-gradient(circle at 30% 30%, #fde68a, #f59e0b); }
+        .candy.kiwi { background: radial-gradient(circle at 30% 30%, #a7f3d0, #34d399); }
+        .candy.apple { background: radial-gradient(circle at 30% 30%, #bbf7d0, #4ade80); }
+        .candy.blueberry { background: radial-gradient(circle at 30% 30%, #67e8f9, #06b6d4); }
+        .candy.grape { background: radial-gradient(circle at 30% 30%, #a5b4fc, #6366f1); }
+        .candy.eggplant { background: radial-gradient(circle at 30% 30%, #d8b4fe, #a855f7); }
+        .candy.candyfloss { background: radial-gradient(circle at 30% 30%, #f9a8d4, #ec4899); }
+        .candy.donut { background: radial-gradient(circle at 30% 30%, #fda4af, #f43f5e); }
+        .candy.cupcake { background: radial-gradient(circle at 30% 30%, #f0abfc, #e879f9); }
+        .candy.cookie { background: radial-gradient(circle at 30% 30%, #fbbf24, #d97706); }
+        .candy.chocolate { background: radial-gradient(circle at 30% 30%, #d4a77e, #92400e); }
+        .candy.coconut { background: radial-gradient(circle at 30% 30%, #e2e8f0, #94a3b8); }
+        
+        /* Color bomb new effect */
+        .color-bomb-effect, .spawned-bomb {
+            animation: pulse-bomb 1.5s infinite;
+        }
+        
+        @keyframes pulse-bomb {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        .candy.matched {
+            animation: pop 0.5s ease-out forwards;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.7; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        .hint {
+            animation: hint-pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes hint-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); box-shadow: 0 0 20px 5px #fff; }
+        }
+
+        .selected {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px 5px #fff, 0 8px 12px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.6);
+        }
+
+        .splash-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .action-button {
+            @apply font-display text-lg text-white font-bold py-2 px-8 rounded-full transition-transform duration-200;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.6);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .action-button:hover {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2));
+            transform: scale(1.05);
+        }
+        .action-button:active {
+            transform: scale(0.98);
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2));
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start md:justify-center px-2 sm:px-4 py-2">
+
+    <div id="splash-screen" class="fixed inset-0 bg-gradient-to-br from-purple-600 to-pink-500 flex flex-col items-center justify-center z-50 transition-opacity duration-1000">
+        <h1 class="text-7xl md:text-8xl text-white tracking-wider font-display" style="text-shadow: 4px 4px 6px rgba(0,0,0,0.4);">Candy Gloss</h1>
+        <p class="text-2xl text-white mt-4 text-center px-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Release Your Stress without Any Ads</p>
+        <p class="text-xl text-white mt-12" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">by</p>
+        <p class="text-3xl text-white font-display mt-2" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Mirjan Ali Sha</p>
+    </div>
+
+    <!-- The main container uses max-width to look good on desktop and w-full for mobile -->
+    <div class="w-full max-w-lg mx-auto">
+        <header class="text-center mb-2 md:mb-4">
+            <h1 class="text-5xl md:text-6xl text-white tracking-wider" style="text-shadow: 3px 3px 5px rgba(0,0,0,0.3);">Candy Gloss</h1>
+        </header>
+
+        <div class="grid grid-cols-4 gap-1 sm:gap-2 items-center bg-white/30 backdrop-blur-sm p-2 sm:p-3 rounded-xl shadow-lg mb-4 text-white">
+            <div class="text-center">
+                <span class="font-display text-xs sm:text-sm md:text-lg">LEVEL</span>
+                <p id="level" class="text-lg sm:text-xl md:text-2xl font-bold">1</p>
+            </div>
+            <div class="text-center">
+                <span class="font-display text-xs sm:text-sm md:text-lg">SCORE</span>
+                <p id="score" class="text-lg sm:text-xl md:text-2xl font-bold">0</p>
+            </div>
+            <div class="text-center">
+                <span class="font-display text-xs sm:text-sm md:text-lg">TARGET</span>
+                <p id="target-score" class="text-lg sm:text-xl md:text-2xl font-bold">1000</p>
+            </div>
+            <div class="text-center">
+                <label for="difficulty-select" class="font-display text-xs sm:text-sm md:text-lg">DIFFICULTY</label>
+                <select id="difficulty-select" class="bg-white/20 text-white rounded-md p-1 font-bold text-center appearance-none w-full cursor-pointer text-sm md:text-base">
+                    <option value="Easy" class="text-black">Easy</option>
+                    <option value="Medium" class="text-black">Medium</option>
+                    <option value="Hard" class="text-black">Hard</option>
+                    <option value="Expert" class="text-black">Expert</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- The game board uses aspect-square to maintain its shape on all screen sizes -->
+        <div id="game-board" class="aspect-square w-full max-w-md mx-auto"></div>
+    </div>
+
+    <div class="text-center mt-2 md:mt-4 text-white" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+        <p>Created by Mirjan Ali Sha</p>
+    </div>
+
+    <div class="flex space-x-4 md:space-x-6 mt-4">
+        <button id="save-button" class="action-button">Save</button>
+        <button id="hint-button" class="action-button">Hint</button>
+        <button id="reset-button" class="action-button">Reset</button>
+    </div>
+    
+    <p id="install-instructions" class="text-white/80 text-xs text-center mt-4 hidden px-4">
+        Tip: You can install this game from your browser's menu by selecting "Add to Home Screen" or "Install App".
+    </p>
+
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white/90 text-gray-800 rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full transform transition-all scale-95 opacity-0" id="modal-content">
+            <h2 id="modal-title" class="text-4xl font-display mb-4">Level Complete!</h2>
+            <p id="modal-message" class="text-lg mb-6">Your score: <span id="modal-score" class="font-bold">0</span></p>
+            <button id="modal-button" class="font-display text-xl bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300">
+                Next Level
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const splashScreen = document.getElementById('splash-screen');
+            setTimeout(() => {
+                splashScreen.classList.add('splash-hidden');
+            }, 3500);
+
+            const grid = document.getElementById('game-board');
+            const scoreDisplay = document.getElementById('score');
+            const levelDisplay = document.getElementById('level');
+            const targetScoreDisplay = document.getElementById('target-score');
+            const difficultySelect = document.getElementById('difficulty-select');
+            const saveButton = document.getElementById('save-button');
+            const resetButton = document.getElementById('reset-button');
+            const hintButton = document.getElementById('hint-button');
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalScore = document.getElementById('modal-score');
+            const modalButton = document.getElementById('modal-button');
+
+            const width = 8;
+            let squares = [];
+            let score = 0;
+            let level = 1;
+            let targetScore = 1000;
+            let isChecking = false;
+            let savedBoardState = null;
+            
             const allCandyTypes = [
                 // Original Emojis
                 { type: '😀', color: 'yellow' }, { type: '❤️', color: 'red' },
@@ -301,6 +586,735 @@
                 { type: '🍬', color: 'candyfloss' }, { type: '🍩', color: 'donut' },
                 { type: '🧁', color: 'cupcake' }, { type: '🍪', color: 'cookie' },
                 { type: '🍫', color: 'chocolate' }, { type: '🥥', color: 'coconut' },
+            ];
+            
+            const bombTypes = [
+                // Re-ordered by level and changed 'chance' to 'weight' for weighted random selection.
+                { emoji: '💣', color: 'coconut', level: 5, radius: 1, weight: 10 }, // Most common
+                { emoji: '💥', color: 'gold', level: 15, radius: 2, weight: 5 },  // Less common
+                { emoji: '🔥', color: 'maroon', level: 30, radius: 3, weight: 2 }   // Rarest
+            ];
+            let currentCandyTypes = [];
+
+            let candyIdBeingDragged;
+            let candyIdBeingReplaced;
+            let candyIdSelectedByClick = null;
+            
+            function getCandyDetails(type) {
+                return allCandyTypes.find(c => c.type === type) || bombTypes.find(b => b.emoji === type);
+            }
+
+            function updateDifficulty() {
+                const difficulty = difficultySelect.value;
+                const difficultyMap = { 'Easy': 6, 'Medium': 9, 'Hard': 13, 'Expert': 18 };
+                const shuffledCandies = [...allCandyTypes].sort(() => 0.5 - Math.random());
+                currentCandyTypes = shuffledCandies.slice(0, difficultyMap[difficulty]);
+            }
+
+            function createNewBoard() {
+                for (let i = 0; i < width * width; i++) {
+                    const square = document.createElement('div');
+                    square.setAttribute('draggable', true);
+                    square.setAttribute('id', i);
+                    
+                    fillSquare(square);
+
+                    grid.appendChild(square);
+                    squares.push(square);
+                }
+            }
+            
+            function reconstructBoard(boardState) {
+                for (let i = 0; i < width * width; i++) {
+                    const square = document.createElement('div');
+                    square.setAttribute('draggable', true);
+                    square.setAttribute('id', i);
+                    
+                    const savedCandy = boardState[i];
+                    if (savedCandy && savedCandy.type) {
+                        const details = getCandyDetails(savedCandy.type);
+                        square.className = `candy ${details.color}`;
+                        square.innerHTML = details.type;
+                        square.dataset.type = details.type;
+                        square.dataset.special = savedCandy.special || 'none';
+                        
+                        if (savedCandy.special === 'wrapped') square.innerHTML = '🎁';
+                        if (savedCandy.special === 'color-bomb') {
+                            square.innerHTML = '✨';
+                            square.classList.add('color-bomb-effect');
+                        }
+                        if (savedCandy.special.startsWith('striped')) {
+                            square.classList.add(savedCandy.special);
+                        }
+                         if (savedCandy.special.startsWith('bomb')) {
+                            square.dataset.bombRadius = savedCandy.bombRadius;
+                            square.classList.add('spawned-bomb');
+                        }
+
+                    } else {
+                        square.className = 'candy';
+                        square.dataset.type = '';
+                        square.dataset.special = 'none';
+                    }
+                    grid.appendChild(square);
+                    squares.push(square);
+                }
+            }
+
+
+            function setupEventListeners() {
+                let touchStartX, touchStartY;
+                squares.forEach(square => {
+                    square.addEventListener('dragstart', dragStart);
+                    square.addEventListener('dragend', dragEnd);
+                    square.addEventListener('dragover', (e) => e.preventDefault());
+                    square.addEventListener('dragenter', (e) => e.preventDefault());
+                    square.addEventListener('drop', dragDrop);
+                    square.addEventListener('click', candyClick);
+
+                    square.addEventListener('touchstart', (e) => {
+                        if (isChecking) return;
+                        candyIdBeingDragged = parseInt(square.id);
+                        touchStartX = e.changedTouches[0].pageX;
+                        touchStartY = e.changedTouches[0].pageY;
+                    }, { passive: true });
+
+                    square.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+                    square.addEventListener('touchend', (e) => {
+                        if (isChecking) return;
+                        const touchEndX = e.changedTouches[0].pageX;
+                        const touchEndY = e.changedTouches[0].pageY;
+                        const deltaX = touchEndX - touchStartX;
+                        const deltaY = touchEndY - touchStartY;
+                        const swipeThreshold = 20;
+
+                        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                            if (deltaX > swipeThreshold) candyIdBeingReplaced = candyIdBeingDragged + 1;
+                            else if (deltaX < -swipeThreshold) candyIdBeingReplaced = candyIdBeingDragged - 1;
+                        } else {
+                            if (deltaY > swipeThreshold) candyIdBeingReplaced = candyIdBeingDragged + width;
+                            else if (deltaY < -swipeThreshold) candyIdBeingReplaced = candyIdBeingDragged - width;
+                        }
+                        dragEnd();
+                    });
+                });
+                difficultySelect.addEventListener('change', handleDifficultyChange);
+                saveButton.addEventListener('click', () => {
+                    saveProgress();
+                    saveButton.textContent = 'Saved!';
+                    setTimeout(() => { saveButton.textContent = 'Save'; }, 2000);
+                });
+                resetButton.addEventListener('click', resetGame);
+                hintButton.addEventListener('click', showHint);
+            }
+
+            function handleDifficultyChange() {
+                level = 1; score = 0; targetScore = 1000;
+                savedBoardState = null; // Clear saved board on difficulty change
+                localStorage.removeItem('candyGlossSave');
+                startGame();
+            }
+            
+            async function candyClick() {
+                if (isChecking) return;
+                const clickedId = parseInt(this.id);
+
+                if (candyIdSelectedByClick === clickedId) {
+                    this.classList.remove('selected');
+                    candyIdSelectedByClick = null;
+                    return;
+                }
+                if (candyIdSelectedByClick === null) {
+                    candyIdSelectedByClick = clickedId;
+                    this.classList.add('selected');
+                } else { 
+                    squares[candyIdSelectedByClick].classList.remove('selected');
+                    if (isValidSwap(candyIdSelectedByClick, clickedId)) {
+                        const id1 = candyIdSelectedByClick;
+                        const id2 = clickedId;
+                        
+                        candyIdSelectedByClick = null; // Reset selection
+                        isChecking = true;
+                        await performSwap(id1, id2);
+                        if (!checkForValidMoves()) {
+                            await shuffleBoard();
+                        }
+                        isChecking = false;
+                    } else {
+                        // If swap is invalid, select the new candy
+                        candyIdSelectedByClick = clickedId;
+                        this.classList.add('selected');
+                    }
+                }
+            }
+            
+            function startGame() {
+                grid.innerHTML = ''; 
+                squares = [];
+                updateDifficulty();
+
+                if (savedBoardState) {
+                    reconstructBoard(savedBoardState);
+                } else {
+                    let boardIsValid = false;
+                    while(!boardIsValid) {
+                        grid.innerHTML = ''; squares = [];
+                        createNewBoard();
+                        if (!findAndProcessMatches(true).matchedIndices.size > 0 && checkForValidMoves()) {
+                            boardIsValid = true;
+                        }
+                    }
+                }
+                
+                setupEventListeners();
+                updateDisplays();
+            }
+
+            function updateDisplays() {
+                scoreDisplay.textContent = score;
+                levelDisplay.textContent = level;
+                targetScoreDisplay.textContent = targetScore;
+            }
+
+            function dragStart() { 
+                if (isChecking) return;
+                if (candyIdSelectedByClick !== null) squares[candyIdSelectedByClick].classList.remove('selected');
+                candyIdSelectedByClick = null;
+                candyIdBeingDragged = parseInt(this.id); 
+            }
+
+            function dragDrop() { if(isChecking) return; candyIdBeingReplaced = parseInt(this.id); }
+
+            async function dragEnd() {
+                if (isChecking || candyIdBeingDragged === undefined || candyIdBeingReplaced === undefined) return;
+                
+                if (isValidSwap(candyIdBeingDragged, candyIdBeingReplaced)) {
+                    isChecking = true;
+                    await performSwap(candyIdBeingDragged, candyIdBeingReplaced);
+                    if (!checkForValidMoves()) {
+                        await shuffleBoard();
+                    }
+                    isChecking = false;
+                }
+                
+                candyIdBeingDragged = undefined;
+                candyIdBeingReplaced = undefined;
+            }
+
+            function isValidSwap(id1, id2) {
+                if (id1 === undefined || id2 === undefined || id2 < 0 || id2 >= width * width) return false;
+                const isLeftEdge = (id1 % width === 0);
+                const isRightEdge = (id1 % width === width - 1);
+                if (isLeftEdge && id2 === id1 - 1) return false;
+                if (isRightEdge && id2 === id1 + 1) return false;
+                const validMoves = [id1 - 1, id1 + 1, id1 - width, id1 + width];
+                return validMoves.includes(id2);
+            }
+            
+            async function performSwap(id1, id2) {
+                swapCandies(id1, id2);
+                let boardChanged = await gameLoop(true, id1, id2);
+
+                if (!boardChanged) {
+                    await new Promise(r => setTimeout(r, 300));
+                    swapCandies(id1, id2);
+                } else {
+                    saveProgress(); // Auto-save after a successful move
+                }
+            }
+            
+            function swapCandies(id1, id2) {
+                const s1 = squares[id1], s2 = squares[id2];
+                const class1 = s1.className, inner1 = s1.innerHTML, type1 = s1.dataset.type, special1 = s1.dataset.special, radius1 = s1.dataset.bombRadius;
+                s1.className = s2.className; s1.innerHTML = s2.innerHTML; s1.dataset.type = s2.dataset.type; s1.dataset.special = s2.dataset.special; s1.dataset.bombRadius = s2.dataset.bombRadius;
+                s2.className = class1; s2.innerHTML = inner1; s2.dataset.type = type1; s2.dataset.special = special1; s2.dataset.bombRadius = radius1;
+            }
+
+            async function gameLoop(isUserSwap = false, id1, id2) {
+                let boardWasChanged = false;
+                let boardCanChange = true;
+
+                while (boardCanChange) {
+                    const { matchedIndices, specialCreations } = findAndProcessMatches();
+                    const toCrush = new Set(matchedIndices);
+                    
+                    if (isUserSwap) { 
+                        activateSpecialOnSwap(id1, id2, toCrush);
+                        isUserSwap = false; 
+                    }
+
+                    matchedIndices.forEach(index => {
+                        const s = squares[index];
+                        if (s) {
+                           const specialType = s.dataset.special;
+                           if (specialType === 'wrapped' || specialType.startsWith('striped')) {
+                               activateSpecialOnCascade(index, toCrush);
+                           } else if (specialType.startsWith('bomb')) {
+                               const radius = parseInt(s.dataset.bombRadius, 10);
+                               blastArea(index, radius, toCrush);
+                           }
+                        }
+                    });
+
+                    if (toCrush.size > 0) {
+                        boardWasChanged = true;
+                        score += toCrush.size * 10;
+                        updateDisplays();
+
+                        specialCreations.forEach(creation => toCrush.delete(creation.index));
+                        
+                        await crushCandies(toCrush);
+                        await createSpecialCandies(specialCreations);
+                        await moveDownCandies();
+                        await fillEmptyCandies();
+                    } else {
+                        boardCanChange = false;
+                    }
+                }
+
+                if(boardWasChanged) {
+                    checkLevelComplete();
+                }
+                
+                return boardWasChanged;
+            }
+
+            function findAndProcessMatches(isCheckOnly = false) {
+                const matchedIndices = new Set();
+                let specialCreations = [];
+            
+                // Priority 1: Find T and L shapes first for Wrapped Candies
+                const tAndLMatches = findTandLMatches();
+                tAndLMatches.forEach(match => {
+                    match.indices.forEach(id => matchedIndices.add(id));
+                    if (!isCheckOnly) {
+                        specialCreations.push({ index: match.center, specialType: 'wrapped' });
+                    }
+                });
+
+                const allMatches = findAllMatches();
+
+                // Priority 2: Find 5-in-a-row matches for Color Bombs
+                const fiveMatches = allMatches.filter(m => m.length === 5);
+                fiveMatches.forEach(match => {
+                    if ([...match].some(id => matchedIndices.has(id))) return;
+                    match.forEach(id => matchedIndices.add(id));
+                    if(!isCheckOnly) specialCreations.push({ index: match[0], specialType: 'color-bomb' });
+                });
+
+                // Priority 3: Find 4-in-a-row matches for Striped Candies
+                const fourMatches = allMatches.filter(m => m.length === 4);
+                fourMatches.forEach(match => {
+                    if ([...match].some(id => matchedIndices.has(id))) return;
+                    match.forEach(id => matchedIndices.add(id));
+                    if(!isCheckOnly) {
+                        const orientation = (match[1] - match[0] === 1) ? '-h' : '-v';
+                        specialCreations.push({ index: match[0], specialType: 'striped' + orientation });
+                    }
+                });
+                
+                // Priority 4: Find normal 3-in-a-row matches
+                const threeMatches = allMatches.filter(m => m.length === 3);
+                threeMatches.forEach(match => {
+                     if ([...match].some(id => matchedIndices.has(id))) return;
+                     match.forEach(id => matchedIndices.add(id));
+                });
+
+                return { matchedIndices, specialCreations };
+            }
+
+            function findAllMatches() {
+                const matches = [];
+                for(let i=0; i<width*width; i++) {
+                    const type = squares[i].dataset.type;
+                    if(!type || squares[i].dataset.special.startsWith('bomb')) continue;
+                    let hMatch = [i];
+                    for(let j=1; i%width+j < width && squares[i+j]?.dataset.type === type; j++) hMatch.push(i+j);
+                    if(hMatch.length >= 3) matches.push(hMatch);
+                    
+                    let vMatch = [i];
+                    for(let j=1; i+j*width < width*width && squares[i+j*width]?.dataset.type === type; j++) vMatch.push(i+j*width);
+                    if(vMatch.length >= 3) matches.push(vMatch);
+                }
+                return matches;
+            }
+
+            function findTandLMatches() {
+                const tAndLMatches = [];
+                const processed = new Set(); 
+
+                for (let i = 0; i < width * width; i++) {
+                    if (processed.has(i) || !squares[i].dataset.type) continue;
+                    
+                    const type = squares[i].dataset.type;
+                    let hArm = [i];
+                    let vArm = [i];
+
+                    // Check horizontal arm
+                    for (let j = i + 1; j % width !== 0 && j < width * width && squares[j].dataset.type === type; j++) hArm.push(j);
+                    for (let j = i - 1; (j + 1) % width !== 0 && j >= 0 && squares[j].dataset.type === type; j--) hArm.push(j);
+
+                    // Check vertical arm
+                    for (let j = i + width; j < width * width && squares[j].dataset.type === type; j += width) vArm.push(j);
+                    for (let j = i - width; j >= 0 && squares[j].dataset.type === type; j -= width) vArm.push(j);
+
+                    if (hArm.length >= 3 && vArm.length >= 3) {
+                        const combinedIndices = new Set([...hArm, ...vArm]);
+                        tAndLMatches.push({ center: i, indices: combinedIndices });
+                        combinedIndices.forEach(id => processed.add(id));
+                    }
+                }
+                return tAndLMatches;
+            }
+            
+            async function createSpecialCandies(creations) {
+                const createdOn = new Set();
+                for (const creation of creations) {
+                    if (createdOn.has(creation.index)) continue;
+
+                    const s = squares[creation.index];
+                    if (s) {
+                        s.dataset.special = creation.specialType;
+                        if (creation.specialType === 'wrapped') s.innerHTML = '🎁';
+                        else if (creation.specialType === 'color-bomb') {
+                            s.innerHTML = '✨';
+                            s.classList.add('color-bomb-effect');
+                        }
+                        else if (creation.specialType.startsWith('striped')) {
+                            s.classList.add(creation.specialType);
+                        }
+                        createdOn.add(creation.index);
+                    }
+                }
+            }
+            
+            function activateSpecialOnSwap(id1, id2, toCrush) {
+                const s1 = squares[id1], s2 = squares[id2];
+                const special1 = s1.dataset.special, special2 = s2.dataset.special;
+                
+                if (special1 !== 'none' && special2 !== 'none') {
+                    toCrush.add(id1); toCrush.add(id2);
+                    if (special1.startsWith('striped')) blastLine(id1, special1, toCrush);
+                    if (special1 === 'wrapped') blastSquare(id1, toCrush);
+                    if (special1.startsWith('bomb')) blastArea(id1, parseInt(s1.dataset.bombRadius), toCrush);
+                    if (special1 === 'color-bomb') {
+                        let targetType = s2.dataset.type;
+                        if (special2 !== 'none' || !targetType) targetType = findMostCommonColor();
+                        blastColor(targetType, toCrush);
+                    }
+                    if (special2.startsWith('striped')) blastLine(id2, special2, toCrush);
+                    if (special2 === 'wrapped') blastSquare(id2, toCrush);
+                     if (special2.startsWith('bomb')) blastArea(id2, parseInt(s2.dataset.bombRadius), toCrush);
+                    if (special2 === 'color-bomb') {
+                        let targetType = s1.dataset.type;
+                        if (special1 !== 'none' || !targetType) targetType = findMostCommonColor();
+                        blastColor(targetType, toCrush);
+                    }
+                    return;
+                }
+
+                if (special1 !== 'none' && !special1.startsWith('striped')) {
+                    toCrush.add(id1); toCrush.add(id2);
+                    if (special1 === 'wrapped') blastSquare(id1, toCrush);
+                    if (special1.startsWith('bomb')) blastArea(id1, parseInt(s1.dataset.bombRadius), toCrush);
+                    if (special1 === 'color-bomb') blastColor(s2.dataset.type, toCrush);
+                    return;
+                }
+                if (special2 !== 'none' && !special2.startsWith('striped')) {
+                    toCrush.add(id1); toCrush.add(id2);
+                    if (special2 === 'wrapped') blastSquare(id2, toCrush);
+                    if (special2.startsWith('bomb')) blastArea(id2, parseInt(s2.dataset.bombRadius), toCrush);
+                    if (special2 === 'color-bomb') blastColor(s1.dataset.type, toCrush);
+                    return;
+                }
+            }
+
+            function activateSpecialOnCascade(index, toCrush) {
+                const specialType = squares[index].dataset.special;
+                if (specialType === 'wrapped') blastSquare(index, toCrush);
+                if (specialType.startsWith('striped')) blastLine(index, specialType, toCrush);
+            }
+
+            function findMostCommonColor() {
+                const counts = {};
+                squares.forEach(s => { if(s.dataset.type) counts[s.dataset.type] = (counts[s.dataset.type] || 0) + 1; });
+                return Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, null);
+            }
+            
+            function blastArea(index, radius, toCrush) {
+                const col = index % width;
+                const row = Math.floor(index / width);
+                for(let r = Math.max(0, row - radius); r <= Math.min(width - 1, row + radius); r++){
+                    for(let c = Math.max(0, col - radius); c <= Math.min(width - 1, col + radius); c++){
+                        toCrush.add(r*width + c);
+                    }
+                }
+            }
+
+            function blastLine(index, type, toCrush) {
+                const row = Math.floor(index/width), col = index % width;
+                if(type.includes('-h')) {
+                    for(let i=0; i<width; i++) toCrush.add(row*width + i);
+                } else {
+                    for(let i=0; i<width; i++) toCrush.add(i*width + col);
+                }
+            }
+            function blastSquare(index, toCrush) {
+                blastArea(index, 1, toCrush);
+            }
+            function blastColor(type, toCrush) {
+                if (!type) return;
+                squares.forEach((s, i) => { if(s.dataset.type === type) toCrush.add(i); });
+            }
+
+            async function crushCandies(indices) {
+                indices.forEach(i => { if(squares[i]) squares[i].classList.add('matched'); });
+                await new Promise(r => setTimeout(r, 500));
+                indices.forEach(i => {
+                    const s = squares[i];
+                    if(s) {
+                        s.innerHTML = ''; s.dataset.type = ''; s.dataset.special = 'none'; s.dataset.bombRadius = '';
+                        s.className = 'candy';
+                    }
+                });
+            }
+            
+            async function moveDownCandies() {
+                 for (let i = width*width - 1; i >= 0; i--) {
+                    if (squares[i].dataset.type === '') {
+                        let k = i - width;
+                        while(k >= 0 && squares[k].dataset.type === '') k -= width;
+                        if (k >= 0) swapCandies(i, k);
+                    }
+                }
+                await new Promise(r => setTimeout(r, 100));
+            }
+
+            function fillSquare(square) {
+                const BOMB_SPAWN_PROBABILITY = 0.04; // 4% chance to spawn ANY bomb
+
+                // 1. Get a list of all bombs available at the current level.
+                const availableBombs = bombTypes.filter(bomb => level >= bomb.level);
+
+                // 2. If there are available bombs, decide if we should spawn one.
+                if (availableBombs.length > 0 && Math.random() < BOMB_SPAWN_PROBABILITY) {
+                    
+                    // A bomb should spawn. Now, which one? Use weights for selection.
+                    const totalWeight = availableBombs.reduce((sum, bomb) => sum + bomb.weight, 0);
+                    let random = Math.random() * totalWeight;
+
+                    for (const bomb of availableBombs) {
+                        if (random < bomb.weight) {
+                            // This is the bomb to spawn.
+                            square.className = `candy ${bomb.color} spawned-bomb`;
+                            square.innerHTML = bomb.emoji;
+                            square.dataset.type = bomb.emoji;
+                            square.dataset.special = `bomb-${bomb.radius}`;
+                            square.dataset.bombRadius = bomb.radius;
+                            return;
+                        }
+                        random -= bomb.weight;
+                    }
+                }
+
+                // Otherwise, spawn a regular candy
+                const randomCandy = currentCandyTypes[Math.floor(Math.random() * currentCandyTypes.length)];
+                square.className = `candy ${randomCandy.color}`;
+                square.innerHTML = randomCandy.type;
+                square.dataset.type = randomCandy.type;
+                square.dataset.special = 'none';
+            }
+            
+            async function fillEmptyCandies() {
+                for (let i = 0; i < width * width; i++) {
+                    if (squares[i].dataset.type === '') {
+                         fillSquare(squares[i]);
+                    }
+                }
+            }
+
+            function checkLevelComplete() {
+                if (score >= targetScore) {
+                    level++; 
+                    score = 0; 
+                    targetScore = Math.floor(targetScore * 1.2);
+                    
+                    let newDifficulty;
+                    if (level > 300) newDifficulty = 'Expert';
+                    else if (level > 200) newDifficulty = 'Hard';
+                    else if (level > 100) newDifficulty = 'Medium';
+                    else newDifficulty = 'Easy';
+                    
+                    difficultySelect.value = newDifficulty;
+                    showModal(`Level ${level-1} Complete!`, `Default difficulty is now ${newDifficulty}. Get ready!`, "Start Level " + level);
+                    localStorage.removeItem('candyGlossSave'); // Clear board state for new level
+                }
+            }
+
+            function showModal(title, message, buttonText) {
+                modalTitle.textContent = title;
+                modalMessage.innerHTML = message;
+                modalButton.textContent = buttonText;
+
+                if (!buttonText) {
+                    modalButton.classList.add('hidden');
+                } else {
+                    modalButton.classList.remove('hidden');
+                }
+                
+                modal.classList.remove('hidden');
+                setTimeout(() => { modalContent.classList.remove('scale-95', 'opacity-0'); }, 50);
+            }
+
+            modalButton.addEventListener('click', () => {
+                modalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => { modal.classList.add('hidden'); if (modalButton.textContent.toLowerCase().includes('level')) setTimeout(startGame, 300); }, 300);
+            });
+
+            function saveProgress() {
+                if(isChecking) return;
+                const boardState = squares.map(s => ({ type: s.dataset.type, special: s.dataset.special, bombRadius: s.dataset.bombRadius }));
+                const gameState = { level, score, targetScore, difficulty: difficultySelect.value, board: boardState };
+                localStorage.setItem('candyGlossSave', JSON.stringify(gameState));
+            }
+
+            function loadProgress() {
+                const savedStateJSON = localStorage.getItem('candyGlossSave');
+                if (savedStateJSON) {
+                    const savedState = JSON.parse(savedStateJSON);
+                    level = savedState.level || 1;
+                    score = savedState.score || 0;
+                    targetScore = savedState.targetScore || 1000;
+                    difficultySelect.value = savedState.difficulty || 'Easy';
+                    savedBoardState = savedState.board;
+                }
+            }
+            
+            function resetGame() {
+                localStorage.removeItem('candyGlossSave');
+                location.reload();
+            }
+
+            function findValidMove() {
+                for (let i = 0; i < width * width; i++) {
+                    // Check swap right
+                    if (i % width < width - 1) {
+                        if (checkMove(i, i + 1)) return [i, i + 1];
+                    }
+                    // Check swap down
+                    if (i < width * (width - 1)) {
+                        if (checkMove(i, i + width)) return [i, i + width];
+                    }
+                }
+                return null;
+            }
+
+            async function showHint() {
+                if (isChecking) return;
+                isChecking = true;
+                const move = findValidMove();
+                if (move) {
+                    const [id1, id2] = move;
+                    squares[id1].classList.add('hint');
+                    squares[id2].classList.add('hint');
+
+                    await new Promise(r => setTimeout(r, 1500));
+
+                    squares[id1].classList.remove('hint');
+                    squares[id2].classList.remove('hint');
+                }
+                isChecking = false;
+            }
+
+            function checkForValidMoves() {
+                return findValidMove() !== null;
+            }
+
+            function checkMove(id1, id2) {
+                const s1 = squares[id1], s2 = squares[id2];
+                // Temporarily swap
+                const type1 = s1.dataset.type, special1 = s1.dataset.special, radius1 = s1.dataset.bombRadius;
+                const type2 = s2.dataset.type, special2 = s2.dataset.special, radius2 = s2.dataset.bombRadius;
+
+                s1.dataset.type = type2; s1.dataset.special = special2; s1.dataset.bombRadius = radius2;
+                s2.dataset.type = type1; s2.dataset.special = special1; s2.dataset.bombRadius = radius1;
+
+                let hasMatch = false;
+                if (findAllMatches().length > 0) {
+                    hasMatch = true;
+                }
+
+                // Swap back
+                s1.dataset.type = type1; s1.dataset.special = special1; s1.dataset.bombRadius = radius1;
+                s2.dataset.type = type2; s2.dataset.special = special2; s2.dataset.bombRadius = radius2;
+                
+                return hasMatch;
+            }
+
+            async function shuffleBoard() {
+                isChecking = true;
+                showModal("No More Moves!", "Shuffling the board...", null);
+                await new Promise(r => setTimeout(r, 1500));
+
+                let boardIsValid = false;
+                while(!boardIsValid) {
+                    const boardState = squares.map(s => ({
+                        className: s.className,
+                        innerHTML: s.innerHTML,
+                        type: s.dataset.type,
+                        special: s.dataset.special,
+                        bombRadius: s.dataset.bombRadius
+                    }));
+                    
+                    boardState.sort(() => 0.5 - Math.random());
+                    
+                    squares.forEach((s, i) => {
+                        s.className = boardState[i].className;
+                        s.innerHTML = boardState[i].innerHTML;
+                        s.dataset.type = boardState[i].type;
+                        s.dataset.special = boardState[i].special;
+                        s.dataset.bombRadius = boardState[i].bombRadius;
+                    });
+
+                    if (!findAndProcessMatches(true).matchedIndices.size > 0 && checkForValidMoves()) {
+                        boardIsValid = true;
+                    }
+                }
+                
+                modalContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => { modal.classList.add('hidden'); }, 300);
+                isChecking = false;
+            }
+            
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE_NAME = 'candy-gloss-cache-v4';
+                    const urlsToCache = ['/', 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;700&display=swap'];
+                    self.addEventListener('install', e => e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(urlsToCache))));
+                    self.addEventListener('activate', e => e.waitUntil(caches.keys().then(cN => Promise.all(cN.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))))));
+                    self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => console.log('Service Worker registered.'))
+                    .catch(error => console.log('Service Worker registration failed:', error));
+            }
+            
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                document.getElementById('install-instructions').classList.remove('hidden');
+            }
+
+            loadProgress();
+            startGame();
+        });
+    </script>
+</body>
+</html>
+
+
             ];
             
             const bombTypes = [
